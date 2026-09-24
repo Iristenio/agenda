@@ -22,17 +22,28 @@ function configurar() {
     prepararAba(planilha, ESQUEMA[entidade].aba, cabecalho(entidade));
   });
   prepararAba(planilha, ABA_LOG, ['data_hora', 'entidade', 'registro_id', 'operacao', 'resultado', 'mensagem']);
+  prepararAba(planilha, ABA_GOOGLE, COLUNAS_GOOGLE);
+  props.setProperty(PROP_ESTRUTURA, VERSAO_ESTRUTURA);
   var padrao = planilha.getSheetByName('Página1') || planilha.getSheetByName('Sheet1');
   if (padrao && planilha.getSheets().length > 1) planilha.deleteSheet(padrao);
 
-  // 3. Token secreto
+  // 3. Google Agenda: agendas separadas, gatilho de pendências e envio inicial de tudo
+  prepararAgendas();
+  instalarGatilho();
+  if (props.getProperty(PROP_GOOGLE) !== 'SIM') {
+    marcarTudoPendenteGoogle(planilha, tabelasDaPlanilha(planilha));
+    props.setProperty(PROP_GOOGLE, 'SIM');
+    Logger.log('Google Agenda ativado: os registros existentes serão enviados nos próximos minutos.');
+  }
+
+  // 4. Token secreto
   var token = props.getProperty(PROP_TOKEN);
   if (!token) {
     token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
     props.setProperty(PROP_TOKEN, token);
   }
 
-  // 4. Código de conexão (endereço PÚBLICO do App da Web + token).
+  // 5. Código de conexão (endereço PÚBLICO do App da Web + token).
   // Atenção: ScriptApp.getService().getUrl() executado no editor devolve o endereço de teste (/dev),
   // que exige login — por isso o endereço público da implantação fica fixo aqui.
   var url = URL_PUBLICA;

@@ -107,6 +107,20 @@ function CartaoGoogle() {
             </span>
           </div>
           {sync.erro && <p class="erros" role="alert">{sync.erro}</p>}
+          {sync.google && (
+            <div class={`sync-status${sync.google.erros ? ' erro' : ''}`}>
+              <span class={`status-ponto ${sync.google.erros ? 'erro' : sync.google.pendentes ? 'pendente' : 'sincronizado'}`} />
+              <strong>Google Agenda</strong>
+              <span>
+                {sync.google.erros
+                  ? `${sync.google.erros} item(ns) com erro — o servidor tentará de novo a cada 5 minutos`
+                  : sync.google.pendentes
+                    ? `${sync.google.pendentes} item(ns) sendo enviados`
+                    : 'em dia'}
+              </span>
+              {sync.google.erros > 0 && sync.google.ultimoErro && <small class="dica">Último erro: {sync.google.ultimoErro}</small>}
+            </div>
+          )}
           <div class="linha">
             <button class="botao primario" disabled={sync.status === 'sincronizando'} onClick={() => sincronizar()}>
               Sincronizar agora

@@ -201,7 +201,7 @@ export function FormEvento({ id, tipo_evento, pessoa_id, data }: Props) {
 
       <label class="interruptor">
         <input type="checkbox" checked={e.sync_google} onChange={(x) => mudar({ sync_google: x.currentTarget.checked })} />
-        <span>Enviar ao Google Agenda <small>(a partir da etapa 5)</small></span>
+        <span>Enviar ao Google Agenda</span>
       </label>
 
       {erros.length > 0 && (

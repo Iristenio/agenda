@@ -5,6 +5,23 @@ var PROP_PLANILHA = 'PLANILHA_ID';
 var PROP_TOKEN = 'TOKEN';
 var ABA_LOG = 'LOG_SYNC';
 var MAX_LINHAS_LOG = 3000;
+var PROP_ESTRUTURA = 'ESTRUTURA';
+var VERSAO_ESTRUTURA = '2';
+var PROP_GOOGLE = 'GOOGLE_AGENDA_ATIVO';
+var PRAZO_GOOGLE_MS = 15000;
+
+/** O envio ao Google Agenda só começa depois que configurar() foi executado com a permissão da Agenda. */
+function googleAtivo() {
+  return PropertiesService.getScriptProperties().getProperty(PROP_GOOGLE) === 'SIM';
+}
+
+/** Cria abas novas quando o backend é atualizado (sem precisar rodar configurar de novo). */
+function garantirEstrutura(planilha) {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty(PROP_ESTRUTURA) === VERSAO_ESTRUTURA) return;
+  prepararAba(planilha, ABA_GOOGLE, COLUNAS_GOOGLE);
+  props.setProperty(PROP_ESTRUTURA, VERSAO_ESTRUTURA);
+}
 
 function doGet() {
   return ContentService.createTextOutput('Agenda API ativa (versão ' + VERSAO_API + ').');
@@ -22,11 +39,24 @@ function doPost(e) {
       trava.waitLock(30000);
       try {
         var planilha = abrirPlanilha();
+        garantirEstrutura(planilha);
         var tabelas = tabelasDaPlanilha(planilha);
         resposta = processar(tabelas, req, new Date().toISOString());
         if (resposta.log && resposta.log.length) registrarLog(planilha, resposta.log);
         delete resposta.log;
         if (req.acao === 'ping') resposta.planilha = planilha.getUrl();
+
+        // Google Agenda: marca o que mudou e envia o que der em poucos segundos (o resto vai pelo gatilho)
+        if (resposta.ok && googleAtivo()) {
+          if (req.acao === 'sincronizar') {
+            var aplicadas = (req.operacoes || []).filter(function (op, i) {
+              var r = resposta.resultados[i];
+              return r && r.ok && !r.ignorado;
+            });
+            marcarPendentesGoogle(planilha, tabelas, aplicadas);
+          }
+          resposta.google = processarGoogle(planilha, tabelas, req.acao === 'sincronizar' ? PRAZO_GOOGLE_MS : 0);
+        }
       } finally {
         trava.releaseLock();
       }

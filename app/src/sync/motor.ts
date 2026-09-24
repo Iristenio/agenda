@@ -28,6 +28,14 @@ export interface EstadoSync {
   ultimaSync: string | null;
   erro: string | null;
   planilha: string | null;
+  /** Envio ao Google Agenda (feito pelo servidor): pendências e erros. */
+  google: ResumoGoogle | null;
+}
+
+export interface ResumoGoogle {
+  pendentes: number;
+  erros: number;
+  ultimoErro: string;
 }
 
 const TAMANHO_LOTE = 50;
@@ -56,7 +64,7 @@ export function decodificarCodigo(codigo: string): Conexao | null {
 
 /* ---------------- Estado observável ---------------- */
 
-let estado: EstadoSync = { status: 'desconectado', pendentes: 0, ultimaSync: null, erro: null, planilha: null };
+let estado: EstadoSync = { status: 'desconectado', pendentes: 0, ultimaSync: null, erro: null, planilha: null, google: null };
 const ouvintes = new Set<(e: EstadoSync) => void>();
 
 export const lerEstadoSync = () => estado;
@@ -91,6 +99,7 @@ interface RespostaSync {
   cursor?: string;
   planilha?: string;
   versao?: number;
+  google?: ResumoGoogle;
 }
 
 const esperar = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
@@ -246,6 +255,7 @@ async function ciclo() {
       if (falhas.length) await registrarFalhas(falhas);
       await aplicarRemotos(r.dados ?? {});
       if (r.cursor) await salvarInterno('_cursor', r.cursor);
+      if (r.google) definir({ google: r.google });
 
       fila = await listarFila();
       voltas++;

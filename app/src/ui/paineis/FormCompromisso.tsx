@@ -280,14 +280,14 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
             );
           })}
         </div>
-        <p class="dica">Os avisos serão enviados pelo Google Agenda (etapa 5).</p>
+        <p class="dica">Os avisos tocam pelo Google Agenda (no tablet e no celular).</p>
       </fieldset>
 
       <textarea class="campo" rows={3} placeholder="Observações (opcional)" value={c.descricao} onInput={(e) => mudar({ descricao: e.currentTarget.value })} />
 
       <label class="interruptor">
         <input type="checkbox" checked={c.sync_google} onChange={(e) => mudar({ sync_google: e.currentTarget.checked })} />
-        <span>Enviar ao Google Agenda <small>(a partir da etapa 5)</small></span>
+        <span>Enviar ao Google Agenda</span>
       </label>
 
       {erros.length > 0 && (
