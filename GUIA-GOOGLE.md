@@ -62,11 +62,26 @@ Os compromissos criados no app vão para a **agenda principal da UNILAB**. Em co
 normalmente conseguem ver sua agenda — às vezes só "ocupado", às vezes **com título e detalhes**, conforme a
 configuração da instituição e a sua.
 
-Se você criar compromissos pessoais no app (médico, família…), vale uma destas opções:
-1. **Marcar como privado** — o Google mostra só "ocupado" para os outros (pode virar uma opção por categoria no app);
-2. **Agenda separada "Pessoal (app)"** na conta UNILAB, sem compartilhamento — escolhida por categoria.
+**✅ Categorias privadas (implementado):** cada categoria tem a opção **"Privada no Google Agenda"**. Compromissos
+dessas categorias vão ao Google como **privados** — quem vê sua agenda enxerga só "ocupado", sem título, local ou
+detalhes. **Pessoal** e **Saúde** já vêm privadas; ajuste em qualquer compromisso → Categoria → *Editar categorias*.
 
-(Ainda não implementado — é uma sugestão para a próxima rodada.)
+### Deixar a agenda da UNILAB totalmente privada (no Google Agenda, pelo computador)
+
+1. Abra [calendar.google.com](https://calendar.google.com) com a conta UNILAB → ⚙️ **Configurações**.
+2. À esquerda, em *Configurações das minhas agendas*, clique na sua agenda principal.
+3. Em **Permissões de acesso a eventos**:
+   - desmarque **"Disponibilizar publicamente"** (se estiver marcado);
+   - em **"Disponibilizar para UNILAB"**, desmarque — ou escolha **"Ver apenas livre/ocupado (ocultar detalhes)"**.
+4. Em **Compartilhar com pessoas e grupos específicos**, revise quem tem acesso e remova quem não deve ver.
+
+Observações:
+- Se desmarcar tudo, colegas deixam de ver até os horários ocupados — e **não conseguem achar horário livre** para
+  marcar reuniões com você. "Livre/ocupado" costuma ser o melhor equilíbrio.
+- O administrador da UNILAB pode **impor** um nível mínimo de compartilhamento; se a opção estiver acinzentada, é isso.
+- Pessoas com quem você compartilhou explicitamente (item 4) e **assistentes/delegados** continuam vendo conforme a
+  permissão dada. Eventos marcados como privados ficam ocultos até para quem tem "ver todos os detalhes"; só quem pode
+  **fazer alterações** vê o conteúdo.
 
 ## 6. O que não dá para fazer (por enquanto)
 
