@@ -4,6 +4,7 @@ import type { Compromisso } from '../../dominio/tipos';
 import {
   conflitos,
   expandirOcorrencias,
+  externosComoOcorrencias,
   normalizarDiaInteiro,
   novoCompromisso,
   validarCompromisso,
@@ -13,7 +14,7 @@ import {
 import { deRRule, type Recorrencia } from '../../dominio/recorrencia';
 import { diferencaMinutos, somarMinutos } from '../../dominio/datas';
 import { novoId } from '../../dados/repositorio';
-import { useEntidade } from '../../dados/ganchos';
+import { useAgendasExternas, useEntidade, useExternos } from '../../dados/ganchos';
 import { carregarOcorrencia, ehDeSerie, excluirCompromisso, novaCategoria, salvarCategoria, salvarCompromisso } from '../acoes/compromissos';
 import { useEstado, type OpcaoDialogo } from '../estado';
 import { SeletorRecorrencia } from '../componentes/SeletorRecorrencia';
@@ -43,6 +44,8 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
   const categorias = useEntidade('categorias').filter((c) => c.ativo).sort((a, b) => a.ordem - b.ordem);
   const todos = useEntidade('compromissos');
   const eventos = useEntidade('eventos');
+  const externos = useExternos();
+  const agendasExternas = useAgendasExternas();
   const [c, setC] = useState<Compromisso | null>(null);
   const [ocorrencia, setOcorrencia] = useState<Ocorrencia | null>(null);
   const [rec, setRec] = useState<Recorrencia | null>(null);
@@ -73,10 +76,18 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
   // RN12 — conflitos com outros compromissos no mesmo período
   const choques = useMemo(() => {
     if (!c || c.dia_inteiro || c.fim <= c.inicio) return [];
-    const doPeriodo = expandirOcorrencias(todos, c.inicio.slice(0, 10), c.fim.slice(0, 10));
+    const de = c.inicio.slice(0, 10);
+    const ate = c.fim.slice(0, 10);
+    const cores = new Map(agendasExternas.map((a) => [a.id, a.cor]));
+    const visiveis = new Set(agendasExternas.map((a) => a.id));
+    const doPeriodo = [
+      ...expandirOcorrencias(todos, de, ate),
+      // Eventos do Google (convites, reuniões) também contam como choque de horário; os marcados como "livre", não
+      ...externosComoOcorrencias(externos.filter((x) => visiveis.has(x.agenda_id) && !x.livre), de, ate, cores),
+    ];
     const propria = ocorrencia?.chave ?? c.id;
     return conflitos({ ...c, chave: propria }, doPeriodo).filter((o) => o.compromisso.id !== c.id || o.chave !== propria);
-  }, [c, todos, ocorrencia]);
+  }, [c, todos, ocorrencia, externos, agendasExternas]);
 
   if (!c) return null;
   const mudar = (parcial: Partial<Compromisso>) => setC({ ...c, ...parcial });
@@ -196,6 +207,7 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
             {choques.slice(0, 3).map((o) => (
               <span key={o.chave}>
                 {fmtHora(o.inicio)}–{fmtHora(o.fim)} · {o.compromisso.titulo}
+                {o.externo && ' (Google Agenda)'}
               </span>
             ))}
             {choques.length > 3 && <span>e mais {choques.length - 3}</span>}

@@ -7,7 +7,7 @@
 //  • O registro "mestre" guarda a regra (rrule) e as datas excluídas (excecoes, "AAAA-MM-DD").
 //  • Uma ocorrência alterada sozinha vira um registro próprio com serie_id + ocorrencia_original.
 //  • As ocorrências são identificadas pela DATA original (uma por dia, no máximo).
-import type { Compromisso, Id } from './tipos';
+import type { Compromisso, Externo, Id } from './tipos';
 import { diferencaMinutos, somarDias, somarMinutos } from './datas';
 import { deRRule, ocorrenciasEntre, paraRRule, type Recorrencia } from './recorrencia';
 
@@ -21,6 +21,47 @@ export interface Ocorrencia {
   /** Data original na série ("AAAA-MM-DD") — identifica a ocorrência. */
   data_original: string | null;
   chave: string;
+  /** Presente quando é um evento do Google criado fora do app (somente leitura). */
+  externo?: Externo;
+  /** Cor fixa (usada nos eventos externos: a cor da agenda de origem). */
+  cor?: string;
+}
+
+/** Converte eventos externos do Google em ocorrências (para exibir junto com os compromissos). */
+export function externosComoOcorrencias(externos: Externo[], de: string, ate: string, cores: Map<string, string> = new Map()): Ocorrencia[] {
+  const inicioJanela = `${de}T00:00`;
+  const fimJanela = `${somarDias(ate, 1)}T00:00`;
+  return externos
+    .filter((e) => sobrepoe(e.inicio, e.fim, inicioJanela, fimJanela))
+    .map((e) => ({
+      compromisso: {
+        id: `ext:${e.id}`,
+        titulo: e.titulo,
+        descricao: '',
+        local: e.local,
+        inicio: e.inicio,
+        fim: e.fim,
+        dia_inteiro: e.dia_inteiro,
+        categoria_id: null,
+        rrule: null,
+        serie_id: null,
+        ocorrencia_original: null,
+        excecoes: [],
+        lembretes: [],
+        sync_google: false,
+        google_event_id: null,
+        status: 'ativo' as const,
+        criado_em: '',
+        atualizado_em: '',
+      },
+      serie: null,
+      inicio: e.inicio,
+      fim: e.fim,
+      data_original: null,
+      chave: `ext:${e.id}`,
+      externo: e,
+      cor: cores.get(e.agenda_id),
+    }));
 }
 
 export function novoCompromisso(campos: Partial<Compromisso> & { id: Id; inicio: string; fim: string }, agora = new Date()): Compromisso {
@@ -63,7 +104,9 @@ export function normalizarDiaInteiro<T extends Pick<Compromisso, 'inicio' | 'fim
 
 /* ---------------- Expansão das ocorrências num período ---------------- */
 
-const sobrepoe = (inicio: string, fim: string, de: string, ate: string) => inicio < ate && fim > de;
+function sobrepoe(inicio: string, fim: string, de: string, ate: string) {
+  return inicio < ate && fim > de;
+}
 
 /** Todas as ocorrências visíveis entre duas datas (inclusivas), ordenadas por início. */
 export function expandirOcorrencias(todos: Compromisso[], de: string, ate: string): Ocorrencia[] {

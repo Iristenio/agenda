@@ -3,7 +3,7 @@ import { useState } from 'preact/hooks';
 import { estaAtrasada, ordenarTarefas } from '../../dominio/tarefas';
 import { agoraDataHora, hojeISO } from '../../dominio/datas';
 import type { Ocorrencia } from '../../dominio/compromissos';
-import { corDaOcorrencia, useDadosPeriodo } from '../calendario/comum';
+import { corDaOcorrencia, painelDaOcorrencia, useDadosPeriodo } from '../calendario/comum';
 import { LISTA_PADRAO_ID } from '../../dados/repositorio';
 import { useAgora, useEntidade } from '../../dados/ganchos';
 import { criarTarefaRapida } from '../acoes/tarefas';
@@ -44,7 +44,7 @@ function CartaoAgenda({ agora }: { agora: Date }) {
   const comHora = ocorrencias.filter((o) => !o.compromisso.dia_inteiro);
   const proximo = comHora.find((o) => o.fim > agoraTexto);
 
-  const abrir = (o: Ocorrencia) => abrirPainel({ tipo: 'compromisso', id: o.compromisso.id, data: o.data_original ?? undefined });
+  const abrir = (o: Ocorrencia) => abrirPainel(painelDaOcorrencia(o));
   const hora = (dh: string) => (dh.slice(0, 10) === hoje ? dh.slice(11, 16) : '…');
 
   return (
@@ -54,7 +54,7 @@ function CartaoAgenda({ agora }: { agora: Date }) {
         {comHora.length + diaInteiro.length > 0 && <span class="contagem">{comHora.length + diaInteiro.length}</span>}
       </h2>
       {diaInteiro.map((o) => (
-        <button key={o.chave} class="agenda-inteiro" style={{ '--cor': corDaOcorrencia(o, categorias) }} onClick={() => abrir(o)}>
+        <button key={o.chave} class={`agenda-inteiro${o.externo ? ' externo' : ''}`} style={{ '--cor': corDaOcorrencia(o, categorias) }} onClick={() => abrir(o)}>
           {o.compromisso.titulo} <small>dia todo</small>
         </button>
       ))}
@@ -72,7 +72,7 @@ function CartaoAgenda({ agora }: { agora: Date }) {
             return (
               <li key={o.chave}>
                 <button
-                  class={`agenda-item${passou ? ' passou' : ''}${emCurso ? ' em-curso' : ''}${o === proximo && !emCurso ? ' proximo' : ''}`}
+                  class={`agenda-item${o.externo ? ' externo' : ''}${passou ? ' passou' : ''}${emCurso ? ' em-curso' : ''}${o === proximo && !emCurso ? ' proximo' : ''}`}
                   style={{ '--cor': corDaOcorrencia(o, categorias) }}
                   onClick={() => abrir(o)}
                 >

@@ -96,6 +96,28 @@ export interface Evento extends Registro {
   status: 'ativo' | 'excluido';
 }
 
+/* ---------------- Google Agenda: eventos de fora do app (somente leitura) ---------------- */
+
+export interface Externo {
+  id: string;          // "<agenda>|<evento>"
+  agenda_id: string;
+  titulo: string;
+  local: string;
+  inicio: string;      // "AAAA-MM-DDTHH:mm" (hora local)
+  fim: string;
+  dia_inteiro: boolean;
+  link: string;        // abre o evento no Google Agenda
+  livre: boolean;      // marcado como "disponível" no Google
+}
+
+export interface AgendaGoogle {
+  id: string;
+  nome: string;
+  cor: string;
+  principal: boolean;
+  acesso: string;
+}
+
 /* ---------------- Infraestrutura ---------------- */
 
 export type Entidade = 'tarefas' | 'listas' | 'compromissos' | 'categorias' | 'pessoas' | 'eventos';

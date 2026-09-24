@@ -1,7 +1,7 @@
 // Ganchos (hooks) da interface para ler dados e se atualizar quando eles mudam.
 import { useEffect, useState } from 'preact/hooks';
-import { aoMudarDados, lerConfig, listarTodos, type MapaEntidades } from './repositorio';
-import type { Config, Entidade } from '../dominio/tipos';
+import { aoMudarDados, lerConfig, lerInterno, listarExternos, listarTodos, type MapaEntidades } from './repositorio';
+import type { AgendaGoogle, Config, Entidade, Externo } from '../dominio/tipos';
 import { CONFIG_PADRAO } from '../dominio/tipos';
 
 /** Executa a consulta e repete sempre que qualquer dado local mudar. */
@@ -22,6 +22,15 @@ export function useConsulta<T>(consulta: () => Promise<T>, inicial: T, deps: unk
 
 export function useEntidade<E extends Entidade>(entidade: E): MapaEntidades[E][] {
   return useConsulta(() => listarTodos(entidade), [] as MapaEntidades[E][], [entidade]);
+}
+
+export function useExternos(): Externo[] {
+  return useConsulta(listarExternos, [] as Externo[]);
+}
+
+/** Agendas do Google escolhidas para aparecer no app (com nome e cor). */
+export function useAgendasExternas(): AgendaGoogle[] {
+  return useConsulta(async () => (await lerInterno<AgendaGoogle[]>('_agendas_externas')) ?? [], [] as AgendaGoogle[]);
 }
 
 export function useConfig(): Config {

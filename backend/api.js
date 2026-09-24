@@ -46,7 +46,9 @@ function doPost(e) {
         var planilha = abrirPlanilha();
         garantirEstrutura(planilha);
         var tabelas = tabelasDaPlanilha(planilha);
-        resposta = req.acao === 'sincronizar' ? sincronizar(planilha, tabelas, req) : processar(tabelas, req, new Date().toISOString());
+        if (req.acao === 'sincronizar') resposta = sincronizar(planilha, tabelas, req);
+        else if (req.acao === 'agendas') resposta = { ok: true, agendas: googleAtivo() ? listarAgendas() : [] };
+        else resposta = processar(tabelas, req, new Date().toISOString());
         if (req.acao === 'ping') {
           resposta.planilha = planilha.getUrl();
           if (googleAtivo()) resposta.google = tabelaGoogle(planilha).resumo();
@@ -75,6 +77,7 @@ function sincronizar(planilha, tabelas, req) {
   if (aplicado.log.length) registrarLog(planilha, aplicado.log);
 
   var google = null;
+  var externos = null;
   if (googleAtivo()) {
     var controle = tabelaGoogle(planilha);
     var aplicadas = operacoes.filter(function (op, i) {
@@ -89,6 +92,8 @@ function sincronizar(planilha, tabelas, req) {
       Logger.log('Falha ao trazer do Google Tasks: ' + textoErro(e));
     }
     google = controle.resumo();
+    // Eventos de fora do app, só quando o aparelho pede (ele controla a frequência)
+    if (req.externos && req.externos.agendas) externos = buscarExternos(req.externos.agendas, controle);
   }
 
   var cursor = new Date().toISOString();
@@ -99,6 +104,7 @@ function sincronizar(planilha, tabelas, req) {
     dados: alteracoesDesde(tabelas, req.cursor || null),
     cursor: cursor,
     google: google,
+    externos: externos,
   };
 }
 

@@ -4,7 +4,7 @@ import { ocorrenciasDoDia } from '../../dominio/compromissos';
 import { deDataISO, hojeISO, inicioDaSemana, inicioDoMes, somarDias } from '../../dominio/datas';
 import { useAgora, useConfig } from '../../dados/ganchos';
 import { useEstado, type Painel } from '../estado';
-import { corDaOcorrencia, ehDeslizeHorizontal, itensDoDia, nomeDiaCurto, useDadosPeriodo } from './comum';
+import { corDaOcorrencia, ehDeslizeHorizontal, itensDoDia, nomeDiaCurto, painelDaOcorrencia, useDadosPeriodo } from './comum';
 
 const MAX_ITENS = 3;
 
@@ -45,8 +45,8 @@ export function VisaoMes({ dataFoco, aoNavegar, aoAbrirDia }: Props) {
         hora: !o.compromisso.dia_inteiro && o.inicio.slice(0, 10) === dia ? o.inicio.slice(11, 16) : undefined,
         rotulo: o.compromisso.titulo,
         cor: corDaOcorrencia(o, categorias),
-        classe: o.compromisso.dia_inteiro ? 'inteiro' : '',
-        painel: { tipo: 'compromisso', id: o.compromisso.id, data: o.data_original ?? undefined },
+        classe: `${o.compromisso.dia_inteiro ? 'inteiro' : ''}${o.externo ? ' externo' : ''}`,
+        painel: painelDaOcorrencia(o),
       });
     }
     for (const t of tarefasPorDia.get(dia) ?? []) {

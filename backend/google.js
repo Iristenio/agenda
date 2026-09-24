@@ -60,6 +60,11 @@ function tabelaGoogle(planilha) {
   var tabela = {
     ler: function (chave) { return indice[chave] === undefined ? null : paraObjeto(linhas[indice[chave]]); },
     chavePorGoogleId: function (googleId) { return porGoogle[googleId] || null; },
+    idsGoogleDaAgenda: function (agenda) {
+      var ids = {};
+      linhas.forEach(function (l) { if (l[1] && l[2] === agenda) ids[l[1]] = true; });
+      return ids;
+    },
     gravar: function (chave, campos) {
       var atual = tabela.ler(chave) || { chave: chave };
       if (atual.google_id && porGoogle[atual.google_id] === chave) delete porGoogle[atual.google_id];

@@ -10,6 +10,7 @@ export type Painel =
   | { tipo: 'compromisso'; id?: string; data?: string; inicio?: string; fim?: string; dia_inteiro?: boolean }
   | { tipo: 'categoria'; id?: string }
   | { tipo: 'pessoa'; id?: string }
+  | { tipo: 'externo'; id: string }
   | { tipo: 'evento'; id?: string; tipo_evento?: TipoEvento; pessoa_id?: string; data?: string };
 
 export interface Aviso {

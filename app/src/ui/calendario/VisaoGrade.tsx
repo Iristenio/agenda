@@ -7,7 +7,7 @@ import { organizarColunas, ocorrenciasDoDia, type Ocorrencia } from '../../domin
 import { deDataISO, diferencaMinutos, hojeISO, paraHora, somarDias } from '../../dominio/datas';
 import { useAgora } from '../../dados/ganchos';
 import { useEstado } from '../estado';
-import { corDaOcorrencia, ehDeslizeHorizontal, itensDoDia, nomeDiaCurto, useDadosPeriodo } from './comum';
+import { corDaOcorrencia, ehDeslizeHorizontal, itensDoDia, nomeDiaCurto, painelDaOcorrencia, useDadosPeriodo } from './comum';
 
 const HORA_PX = 56;
 const MIN_PX = HORA_PX / 60;
@@ -122,8 +122,7 @@ export function VisaoGrade({ dias, aoNavegar, aoAbrirDia }: Props) {
     abrirPainel({ tipo: 'compromisso', inicio, fim: termino });
   }
 
-  const abrirOcorrencia = (o: Ocorrencia) =>
-    abrirPainel({ tipo: 'compromisso', id: o.compromisso.id, data: o.data_original ?? undefined });
+  const abrirOcorrencia = (o: Ocorrencia) => abrirPainel(painelDaOcorrencia(o));
 
   const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
 
@@ -157,7 +156,7 @@ export function VisaoGrade({ dias, aoNavegar, aoAbrirDia }: Props) {
                 </button>
               ))}
               {doDia.map((o) => (
-                <button key={o.chave} class="chip-evento" style={{ '--cor': corDaOcorrencia(o, categorias) }} onClick={() => abrirOcorrencia(o)}>
+                <button key={o.chave} class={`chip-evento${o.externo ? ' externo' : ''}`} style={{ '--cor': corDaOcorrencia(o, categorias) }} onClick={() => abrirOcorrencia(o)}>
                   {o.compromisso.titulo}
                 </button>
               ))}
@@ -210,7 +209,7 @@ export function VisaoGrade({ dias, aoNavegar, aoAbrirDia }: Props) {
                   return (
                     <button
                       key={o.chave}
-                      class={`evento${duracao < 45 ? ' curto' : ''}`}
+                      class={`evento${duracao < 45 ? ' curto' : ''}${o.externo ? ' externo' : ''}`}
                       style={{
                         '--cor': corDaOcorrencia(o, categorias),
                         top: minIni * MIN_PX,

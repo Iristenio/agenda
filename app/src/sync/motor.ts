@@ -3,7 +3,7 @@
 // Um ciclo = uma ou mais chamadas "sincronizar" ao backend. Cada chamada:
 //   1) envia um lote da fila local (até 50 alterações);
 //   2) recebe tudo o que o servidor recebeu depois do último cursor (de qualquer aparelho).
-import type { Entidade, ItemFila, Registro, Tarefa } from '../dominio/tipos';
+import type { AgendaGoogle, Entidade, Externo, ItemFila, Registro, Tarefa } from '../dominio/tipos';
 import { concluirTarefa } from '../dominio/tarefas';
 import {
   aoGravarLocal,
@@ -15,6 +15,7 @@ import {
   listarFila,
   registrarFalhas,
   salvarInterno,
+  substituirExternos,
 } from '../dados/repositorio';
 
 export interface Conexao {
@@ -33,6 +34,8 @@ export interface EstadoSync {
   planilha: string | null;
   /** Envio ao Google Agenda (feito pelo servidor): pendências e erros. */
   google: ResumoGoogle | null;
+  /** Agendas externas que o servidor não conseguiu ler. */
+  falhasExternos: { agenda_id: string; erro: string }[];
 }
 
 export interface ResumoGoogle {
@@ -45,6 +48,7 @@ const TAMANHO_LOTE = 50;
 const INTERVALO_MS = 5 * 60_000;
 const ESPERA_ENVIO_MS = 2_500;
 const FALHAS_PARA_ERRO = 5;
+const INTERVALO_EXTERNOS_MS = 5 * 60_000;
 
 /* ---------------- Código de conexão ---------------- */
 
@@ -67,7 +71,7 @@ export function decodificarCodigo(codigo: string): Conexao | null {
 
 /* ---------------- Estado observável ---------------- */
 
-let estado: EstadoSync = { status: 'desconectado', pendentes: 0, ultimaSync: null, erro: null, planilha: null, google: null };
+let estado: EstadoSync = { status: 'desconectado', pendentes: 0, ultimaSync: null, erro: null, planilha: null, google: null, falhasExternos: [] };
 const ouvintes = new Set<(e: EstadoSync) => void>();
 
 export const lerEstadoSync = () => estado;
@@ -103,6 +107,8 @@ interface RespostaSync {
   planilha?: string;
   versao?: number;
   google?: ResumoGoogle;
+  externos?: { itens: Externo[]; falhas: { agenda_id: string; erro: string }[]; em: string } | null;
+  agendas?: AgendaGoogle[];
 }
 
 const esperar = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
@@ -236,6 +242,7 @@ async function ciclo() {
   try {
     let fila = await listarFila();
     let voltas = 0;
+    let externos = await pedidoDeExternos();
     do {
       const lote = fila.slice(0, TAMANHO_LOTE);
       const cursor = (await lerInterno<string>('_cursor')) ?? null;
@@ -243,7 +250,15 @@ async function ciclo() {
         acao: 'sincronizar',
         cursor,
         operacoes: lote.map((i) => ({ id: i.id, entidade: i.entidade, registro_id: i.registro_id, operacao: i.operacao, payload: i.payload })),
+        ...(externos ? { externos } : {}),
       });
+      if (externos && r.externos) {
+        await substituirExternos(r.externos.itens);
+        externosEm = Date.now();
+        forcarExternos = false;
+        definir({ falhasExternos: r.externos.falhas });
+      }
+      externos = null; // só na primeira chamada do ciclo
 
       const porId = new Map(lote.map((i) => [i.id, i]));
       const sucessos: ItemFila[] = [];
@@ -302,6 +317,40 @@ async function gerarProximasRecorrentes(recebidas: Tarefa[]): Promise<number> {
     geradas++;
   }
   return geradas;
+}
+
+/* ---------------- Agendas do Google exibidas no app (somente leitura) ---------------- */
+
+let externosEm = 0;
+let forcarExternos = true;
+
+/** Pedido de eventos externos para esta sincronização (ou null se ainda não é hora). */
+async function pedidoDeExternos(): Promise<{ agendas: string[] } | null> {
+  const escolhidas = (await lerInterno<AgendaGoogle[]>('_agendas_externas')) ?? [];
+  if (!escolhidas.length) {
+    if (forcarExternos) {
+      await substituirExternos([]);
+      forcarExternos = false;
+    }
+    return null;
+  }
+  if (!forcarExternos && Date.now() - externosEm < INTERVALO_EXTERNOS_MS) return null;
+  return { agendas: escolhidas.map((a) => a.id) };
+}
+
+/** Lista as agendas da conta Google (para escolher quais mostrar no app). */
+export async function listarAgendasGoogle(): Promise<AgendaGoogle[]> {
+  const conexao = await lerInterno<Conexao>('_conexao');
+  if (!conexao) throw new ErroApi('Conecte o app ao Google primeiro.');
+  const r = await chamar(conexao, { acao: 'agendas' });
+  return r.agendas ?? [];
+}
+
+/** Salva a escolha de agendas e busca os eventos imediatamente. */
+export async function definirAgendasExternas(agendas: AgendaGoogle[]) {
+  await salvarInterno('_agendas_externas', agendas);
+  forcarExternos = true;
+  await sincronizar();
 }
 
 /* ---------------- Início automático ---------------- */

@@ -1,9 +1,17 @@
 // Tela Ajustes: conexão com o Google, preferências e informações do aparelho.
 import { useEffect, useState } from 'preact/hooks';
-import type { Config } from '../../dominio/tipos';
+import type { AgendaGoogle, Config } from '../../dominio/tipos';
 import { salvarConfig } from '../../dados/repositorio';
-import { useConfig } from '../../dados/ganchos';
-import { baixarTudo, conectar, desconectar, ErroApi, sincronizar } from '../../sync/motor';
+import { useAgendasExternas, useConfig } from '../../dados/ganchos';
+import {
+  baixarTudo,
+  conectar,
+  definirAgendasExternas,
+  desconectar,
+  ErroApi,
+  listarAgendasGoogle,
+  sincronizar,
+} from '../../sync/motor';
 import { descreverUltimaSync, ROTULO_STATUS, useSync } from '../../sync/ganchos';
 import { useEstado } from '../estado';
 
@@ -15,6 +23,7 @@ export function TelaAjustes() {
       </header>
       <div class="conteudo ajustes">
         <CartaoGoogle />
+        <CartaoAgendasExternas />
         <CartaoPreferencias />
         <CartaoAparelho />
       </div>
@@ -141,6 +150,127 @@ function CartaoGoogle() {
             A sincronização acontece sozinha: ao abrir o app, alguns segundos após cada alteração, quando a internet
             volta e a cada 5 minutos.
           </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ---------------- Agendas do Google exibidas no app ---------------- */
+
+const ACESSO: Record<string, string> = {
+  owner: 'sua',
+  writer: 'pode editar',
+  reader: 'só leitura',
+  freeBusyReader: 'só livre/ocupado',
+};
+
+function CartaoAgendasExternas() {
+  const sync = useSync();
+  const escolhidas = useAgendasExternas();
+  const { avisar } = useEstado();
+  const [disponiveis, setDisponiveis] = useState<AgendaGoogle[] | null>(null);
+  const [marcadas, setMarcadas] = useState<Set<string>>(new Set());
+  const [ocupado, setOcupado] = useState(false);
+  const [erro, setErro] = useState('');
+  const conectado = sync.status !== 'desconectado';
+
+  async function abrirEscolha() {
+    setOcupado(true);
+    setErro('');
+    try {
+      const lista = await listarAgendasGoogle();
+      setDisponiveis(lista);
+      setMarcadas(new Set(escolhidas.map((a) => a.id)));
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : 'Não foi possível listar as agendas.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function salvarEscolha() {
+    setOcupado(true);
+    await definirAgendasExternas((disponiveis ?? []).filter((a) => marcadas.has(a.id)));
+    setOcupado(false);
+    setDisponiveis(null);
+    avisar({ texto: 'Agendas atualizadas' });
+  }
+
+  const alternar = (id: string) =>
+    setMarcadas((atual) => {
+      const nova = new Set(atual);
+      if (nova.has(id)) nova.delete(id);
+      else nova.add(id);
+      return nova;
+    });
+
+  return (
+    <section class="cartao">
+      <h2>Agendas do Google no app</h2>
+      <p class="dica">
+        Mostra no calendário do app, <strong>somente para consulta</strong>, os eventos criados fora dele — convites,
+        reuniões, agendas compartilhadas. Aparecem com a cor da agenda e borda tracejada, e contam no aviso de choque de
+        horário.
+      </p>
+
+      {!conectado && <p class="dica">Conecte o app ao Google (acima) para escolher as agendas.</p>}
+
+      {conectado && !disponiveis && (
+        <>
+          {escolhidas.length === 0 ? (
+            <p class="dica">Nenhuma agenda escolhida.</p>
+          ) : (
+            <ul class="agendas-lista">
+              {escolhidas.map((a) => (
+                <li key={a.id}>
+                  <i class="bolinha" style={{ background: a.cor }} /> {a.nome}
+                  {a.principal && <small> · principal</small>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {sync.falhasExternos.length > 0 && (
+            <p class="erros">
+              Não foi possível ler: {sync.falhasExternos.map((f) => escolhidas.find((a) => a.id === f.agenda_id)?.nome ?? f.agenda_id).join(', ')}
+            </p>
+          )}
+          {erro && <p class="erros">{erro}</p>}
+          <div class="linha">
+            <button class="botao primario" disabled={ocupado} onClick={abrirEscolha}>
+              {ocupado ? 'Buscando agendas…' : 'Escolher agendas'}
+            </button>
+          </div>
+        </>
+      )}
+
+      {disponiveis && (
+        <div class="formulario">
+          {disponiveis.map((a) => (
+            <label key={a.id} class="agenda-opcao">
+              <input type="checkbox" checked={marcadas.has(a.id)} onChange={() => alternar(a.id)} />
+              <i class="bolinha grande" style={{ background: a.cor }} />
+              <span>
+                <strong>{a.nome}</strong>
+                <small>
+                  {a.principal ? 'agenda principal · ' : ''}
+                  {ACESSO[a.acesso] ?? a.acesso}
+                </small>
+              </span>
+            </label>
+          ))}
+          <p class="dica">
+            Na agenda principal, os eventos criados pelo próprio app não aparecem duplicados. As agendas "Aniversários" e
+            "Férias" do app não entram na lista — já estão no app.
+          </p>
+          <div class="linha">
+            <button class="botao primario" disabled={ocupado} onClick={salvarEscolha}>
+              {ocupado ? 'Salvando…' : 'Salvar'}
+            </button>
+            <button class="botao" onClick={() => setDisponiveis(null)}>
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
     </section>

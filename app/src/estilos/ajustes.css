@@ -46,3 +46,22 @@
 /* Status de sincronização no menu é um botão */
 button.status-sync { cursor: pointer; border-radius: 10px; }
 button.status-sync:active { background: var(--superficie-2); }
+
+/* ---- Agendas do Google exibidas no app ---- */
+.agendas-lista { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.agendas-lista li { display: flex; align-items: center; gap: 10px; }
+.agendas-lista small { color: var(--texto-2); }
+.agenda-opcao {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: var(--superficie-2);
+  cursor: pointer;
+}
+.agenda-opcao input { width: 22px; height: 22px; accent-color: var(--primaria); flex: none; }
+.agenda-opcao span { display: flex; flex-direction: column; min-width: 0; }
+.agenda-opcao strong { font-weight: 600; overflow-wrap: anywhere; }
+.agenda-opcao small { color: var(--texto-2); }

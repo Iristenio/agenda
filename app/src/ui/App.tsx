@@ -18,6 +18,7 @@ import { FormCompromisso } from './paineis/FormCompromisso';
 import { FormCategoria } from './paineis/FormCategoria';
 import { FormPessoa } from './paineis/FormPessoa';
 import { FormEvento } from './paineis/FormEvento';
+import { PainelExterno } from './paineis/PainelExterno';
 import { hojeISO, paraDataISO, paraHora } from '../dominio/datas';
 
 const TELA: Record<Tela, () => JSX.Element> = {
@@ -42,6 +43,8 @@ function tituloPainel(p: Painel): string {
       return p.id ? 'Pessoa' : 'Nova pessoa';
     case 'evento':
       return p.id ? 'Férias / período' : 'Novas férias / período';
+    case 'externo':
+      return 'Evento do Google Agenda';
   }
 }
 
@@ -59,6 +62,8 @@ function ConteudoPainel({ painel }: { painel: Painel }) {
       return <FormPessoa id={painel.id} />;
     case 'evento':
       return <FormEvento id={painel.id} tipo_evento={painel.tipo_evento} pessoa_id={painel.pessoa_id} data={painel.data} />;
+    case 'externo':
+      return <PainelExterno id={painel.id} />;
   }
 }
 

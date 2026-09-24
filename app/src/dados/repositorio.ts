@@ -1,6 +1,6 @@
 // Leitura e gravação local + registro na fila de sincronização (RN01, RN02, RN04, RS02).
 import { abrirBanco } from './db';
-import type { Categoria, Compromisso, Config, Entidade, Evento, ItemFila, Lista, Pessoa, Registro, Tarefa } from '../dominio/tipos';
+import type { Categoria, Compromisso, Config, Entidade, Evento, Externo, ItemFila, Lista, Pessoa, Registro, Tarefa } from '../dominio/tipos';
 import { CONFIG_PADRAO } from '../dominio/tipos';
 
 export type MapaEntidades = {
@@ -112,6 +112,23 @@ export async function salvar<E extends Entidade>(entidade: E, registro: MapaEnti
 export async function contarPendentes(): Promise<number> {
   const db = await abrirBanco();
   return db.count('fila_sync');
+}
+
+/* ---------------- Eventos externos (Google, somente leitura) ---------------- */
+
+export async function listarExternos(): Promise<Externo[]> {
+  const db = await abrirBanco();
+  return db.getAll('externos');
+}
+
+/** Substitui todos os eventos externos pelos recebidos (a busca sempre traz a janela inteira). */
+export async function substituirExternos(itens: Externo[]) {
+  const db = await abrirBanco();
+  const tx = db.transaction('externos', 'readwrite');
+  await tx.store.clear();
+  for (const e of itens) await tx.store.put(e);
+  await tx.done;
+  avisarMudanca();
 }
 
 /* ---------------- Configurações ---------------- */
