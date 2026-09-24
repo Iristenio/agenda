@@ -229,10 +229,11 @@ export async function salvarConfig(parcial: Partial<Config>) {
 export const LISTA_PADRAO_ID = 'geral';
 
 const CATEGORIAS_INICIAIS = [
-  { id: 'cat-pessoal', nome: 'Pessoal', cor: '#30a46c' },
-  { id: 'cat-trabalho', nome: 'Trabalho', cor: '#2f6fed' },
-  { id: 'cat-saude', nome: 'Saúde', cor: '#e5484d' },
+  { id: 'cat-pessoal', nome: 'Pessoal', cor: '#30a46c', privada: true },
+  { id: 'cat-trabalho', nome: 'Trabalho', cor: '#2f6fed', privada: false },
+  { id: 'cat-saude', nome: 'Saúde', cor: '#e5484d', privada: true },
 ];
+const PRIVADAS_POR_PADRAO = new Set(['cat-pessoal', 'cat-saude']);
 
 /** Cria a lista "Geral" e as categorias iniciais na primeira execução (ids fixos, para não duplicar ao restaurar). */
 export async function garantirDadosIniciais(agora = new Date()) {
@@ -247,6 +248,7 @@ export async function garantirDadosIniciais(agora = new Date()) {
       agora,
     );
   }
+  await migrarCategoriasPrivadas(agora);
   if (await db.get('listas', LISTA_PADRAO_ID)) return;
   await gravar(
     [
@@ -266,6 +268,22 @@ export async function garantirDadosIniciais(agora = new Date()) {
     ],
     agora,
   );
+}
+
+/**
+ * Uma única vez: categorias criadas antes do campo "privada" ganham o valor padrão
+ * (Pessoal e Saúde privadas). Grava pela fila, para refletir no Google Agenda.
+ */
+async function migrarCategoriasPrivadas(agora: Date) {
+  if (await lerInterno('_migracao_privada')) return;
+  const antigas = (await listarTodos('categorias')).filter((c) => typeof c.privada !== 'boolean');
+  if (antigas.length) {
+    await gravar(
+      antigas.map((c) => ({ entidade: 'categorias' as const, registro: { ...c, privada: PRIVADAS_POR_PADRAO.has(c.id) } })),
+      agora,
+    );
+  }
+  await salvarInterno('_migracao_privada', true);
 }
 
 /** RS09 — pede ao navegador para não apagar os dados locais. */

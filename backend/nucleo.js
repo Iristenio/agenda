@@ -8,6 +8,7 @@
 var VERSAO_API = 1;
 
 // Tipos: s = texto, s? = texto ou vazio (null), n = número, b = sim/não, j = lista/objeto (JSON)
+// Campos novos entram SEMPRE no fim da lista (antes de _recebido_em), com migração em garantirEstrutura().
 var ESQUEMA = {
   tarefas: {
     aba: 'TAREFAS',
@@ -38,7 +39,7 @@ var ESQUEMA = {
     aba: 'CATEGORIAS',
     campos: [
       ['id', 's'], ['nome', 's'], ['cor', 's'], ['icone', 's'], ['ordem', 'n'], ['ativo', 'b'],
-      ['criado_em', 's'], ['atualizado_em', 's'],
+      ['criado_em', 's'], ['atualizado_em', 's'], ['privada', 'b'],
     ],
   },
   pessoas: {
@@ -60,6 +61,13 @@ var ESQUEMA = {
 };
 
 var COLUNA_RECEBIDO = '_recebido_em';
+
+/** Posição (0 = primeira) de um campo na aba da entidade. */
+function colunaDe(entidade, campo) {
+  var campos = ESQUEMA[entidade].campos;
+  for (var i = 0; i < campos.length; i++) if (campos[i][0] === campo) return i;
+  return -1;
+}
 
 function cabecalho(entidade) {
   return ESQUEMA[entidade].campos.map(function (c) { return c[0]; }).concat([COLUNA_RECEBIDO]);
@@ -120,7 +128,7 @@ function aplicarOperacoes(tabelas, operacoes, agora) {
         tabela.linhas().forEach(function (l, i) { indices[op.entidade][String(l[0])] = i; });
       }
       var idx = indices[op.entidade][reg.id];
-      var colAtualizado = ESQUEMA[op.entidade].campos.length - 1;
+      var colAtualizado = colunaDe(op.entidade, 'atualizado_em');
 
       if (idx !== undefined) {
         var existente = tabela.linhas()[idx];

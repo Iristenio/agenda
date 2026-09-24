@@ -50,6 +50,13 @@ export function FormCategoria({ id }: { id?: string }) {
           ))}
         </div>
       </fieldset>
+      <label class="interruptor">
+        <input type="checkbox" checked={!!c.privada} onChange={(e) => setC({ ...c, privada: e.currentTarget.checked })} />
+        <span>
+          Privada no Google Agenda
+          <small> — quem vê sua agenda enxerga só "ocupado", sem título nem detalhes</small>
+        </span>
+      </label>
       {erro && <p class="erros" role="alert">{erro}</p>}
       <div class="acoes-form">
         <button type="submit" class="botao primario">{id ? 'Salvar' : 'Criar categoria'}</button>

@@ -103,7 +103,7 @@ function tabelaGoogle(planilha) {
 
 function registrosPorId(tabelas) {
   var mapa = {};
-  ENTIDADES_GOOGLE.forEach(function (entidade) {
+  ENTIDADES_GOOGLE.concat(['categorias']).forEach(function (entidade) {
     mapa[entidade] = {};
     tabelas[entidade].linhas().forEach(function (l) {
       if (l[0] !== '') mapa[entidade][String(l[0])] = linhaParaRegistro(entidade, l);
@@ -120,6 +120,7 @@ function contexto(mapa) {
   });
   return {
     pessoas: mapa.pessoas,
+    categorias: mapa.categorias,
     excecoesDe: function (id) { return excecoes[id] || []; },
   };
 }
@@ -128,11 +129,12 @@ function contexto(mapa) {
 
 /** Marca como pendentes os registros alterados (e os que dependem deles). */
 function marcarPendentesGoogle(planilha, tabelas, operacoes, controle) {
-  var ativas = ENTIDADES_AGENDA.concat(tasksAtivo() ? ENTIDADES_TASKS : []);
+  var ativas = ENTIDADES_AGENDA.concat(['categorias'], tasksAtivo() ? ENTIDADES_TASKS : []);
   var relevantes = operacoes.filter(function (op) { return ativas.indexOf(op.entidade) >= 0; });
   if (!relevantes.length) return;
   var mapa = registrosPorId(tabelas);
-  var todos = { eventos: Object.keys(mapa.eventos).map(function (id) { return mapa.eventos[id]; }) };
+  var lista = function (e) { return Object.keys(mapa[e]).map(function (id) { return mapa[e][id]; }); };
+  var todos = { eventos: lista('eventos'), compromissos: lista('compromissos') };
   var vistos = {};
   relevantes.forEach(function (op) {
     dependentesGoogle(op.entidade, op.payload, todos).forEach(function (chave) {

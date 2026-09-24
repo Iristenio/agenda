@@ -67,6 +67,8 @@ export interface Categoria extends Registro {
   icone: string;
   ordem: number;
   ativo: boolean;
+  /** Compromissos desta categoria vão ao Google Agenda como "privado" (colegas veem só "ocupado"). */
+  privada: boolean;
 }
 
 /* ---------------- Pessoas e eventos (etapa 3) ---------------- */

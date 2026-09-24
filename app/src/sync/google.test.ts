@@ -61,6 +61,15 @@ describe('compromissos → Google', () => {
     expect(avulso.evento.start.dateTime).toBe('2026-09-25T14:00:00');
   });
 
+  it('categoria privada → evento privado no Google; mudar a categoria reenvia os compromissos dela', () => {
+    const ctx = { pessoas: {}, categorias: { saude: { id: 'saude', privada: true }, trab: { id: 'trab', privada: false } }, excecoesDe: () => [] };
+    expect(g.montarEventoGoogle('compromissos', comp({ categoria_id: 'saude' }), ctx).evento.visibility).toBe('private');
+    expect(g.montarEventoGoogle('compromissos', comp({ categoria_id: 'trab' }), ctx).evento.visibility).toBeUndefined();
+    expect(g.montarEventoGoogle('compromissos', comp(), ctx).evento.visibility).toBeUndefined();
+    const todos = { compromissos: [comp({ id: 'a', categoria_id: 'saude' }), comp({ id: 'b', categoria_id: 'trab' })] };
+    expect(g.dependentesGoogle('categorias', { id: 'saude' }, todos)).toEqual(['compromissos:a']);
+  });
+
   it('alterar uma exceção também reenvia a série', () => {
     expect(g.dependentesGoogle('compromissos', { id: 'c2', serie_id: 'c1' }, {})).toEqual(['compromissos:c2', 'compromissos:c1']);
   });

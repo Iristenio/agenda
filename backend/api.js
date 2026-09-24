@@ -6,7 +6,7 @@ var PROP_TOKEN = 'TOKEN';
 var ABA_LOG = 'LOG_SYNC';
 var MAX_LINHAS_LOG = 3000;
 var PROP_ESTRUTURA = 'ESTRUTURA';
-var VERSAO_ESTRUTURA = '3';
+var VERSAO_ESTRUTURA = '4';
 var PROP_GOOGLE = 'GOOGLE_AGENDA_ATIVO';
 var PRAZO_GOOGLE_MS = 15000;
 
@@ -18,8 +18,17 @@ function googleAtivo() {
 /** Cria abas novas quando o backend é atualizado (sem precisar rodar configurar de novo). */
 function garantirEstrutura(planilha) {
   var props = PropertiesService.getScriptProperties();
-  if (props.getProperty(PROP_ESTRUTURA) === VERSAO_ESTRUTURA) return;
+  var anterior = props.getProperty(PROP_ESTRUTURA);
+  if (anterior === VERSAO_ESTRUTURA) return;
   prepararAba(planilha, ABA_GOOGLE, COLUNAS_GOOGLE);
+  // v4: CATEGORIAS ganhou "privada" antes de _recebido_em → abre a coluna para as linhas existentes
+  var abaCat = planilha.getSheetByName(ESQUEMA.categorias.aba);
+  var cabAtual = abaCat.getRange(1, 1, 1, abaCat.getLastColumn()).getDisplayValues()[0];
+  if (cabAtual.indexOf('privada') < 0) {
+    var posRecebido = cabAtual.indexOf(COLUNA_RECEBIDO);
+    if (posRecebido >= 0) abaCat.insertColumnBefore(posRecebido + 1);
+    prepararAba(planilha, ESQUEMA.categorias.aba, cabecalho('categorias'));
+  }
   props.setProperty(PROP_ESTRUTURA, VERSAO_ESTRUTURA);
   // Primeira execução da versão com Google Tasks: envia todas as listas e tarefas
   if (tasksAtivo() && props.getProperty('TASKS_ENVIO_INICIAL') !== 'SIM') {

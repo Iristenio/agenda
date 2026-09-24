@@ -143,6 +143,7 @@ export function novaCategoria(ordem: number): Categoria {
     icone: '',
     ordem,
     ativo: true,
+    privada: false,
     criado_em: carimbo,
     atualizado_em: carimbo,
   };

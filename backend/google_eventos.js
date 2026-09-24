@@ -73,6 +73,9 @@ function montarEventoGoogle(entidade, reg, ctx) {
     if (reg.local) evento.location = reg.local;
     if (reg.descricao) evento.description = reg.descricao;
     evento.reminders = lembretes(reg.lembretes);
+    // Categoria privada → colegas que veem a agenda enxergam só "ocupado"
+    var categoria = reg.categoria_id && ctx.categorias ? ctx.categorias[reg.categoria_id] : null;
+    if (categoria && categoria.privada) evento.visibility = 'private';
 
     if (reg.rrule) {
       var regra = regraParaGoogle(reg.rrule, reg.dia_inteiro);
@@ -154,6 +157,9 @@ function dependentesGoogle(entidade, reg, todos) {
     if (reg.serie_id) chaves.push('compromissos:' + reg.serie_id); // o EXDATE da série muda
   } else if (entidade === 'eventos') {
     chaves.push('eventos:' + reg.id);
+  } else if (entidade === 'categorias') {
+    // Mudou a privacidade (ou outro dado) da categoria: reenvia os compromissos dela
+    (todos.compromissos || []).forEach(function (c) { if (c.categoria_id === reg.id) chaves.push('compromissos:' + c.id); });
   } else if (entidade === 'tarefas' || entidade === 'listas') {
     chaves.push(entidade + ':' + reg.id);
   } else if (entidade === 'pessoas') {

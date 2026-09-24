@@ -267,6 +267,9 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
             </span>
           )}
         </div>
+        {categorias.find((x) => x.id === c.categoria_id)?.privada && (
+          <p class="dica">🔒 Categoria privada: no Google Agenda, os outros verão só "ocupado".</p>
+        )}
         {categorias.length > 0 && (
           <button type="button" class="link esquerda" onClick={() => abrirPainel({ tipo: 'categoria', id: c.categoria_id ?? categorias[0].id })}>
             Editar categorias

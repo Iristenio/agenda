@@ -66,6 +66,14 @@ describe('núcleo do backend', () => {
     expect(nucleo.linhaParaRegistro('compromissos', l2)).toMatchObject(comp);
   });
 
+  it('categoria: "privada" vem depois de atualizado_em e a comparação de versões continua certa', () => {
+    const base = { id: 'c', nome: 'Saúde', cor: '#000', icone: '', ordem: 0, ativo: true, criado_em: 'x' };
+    outroAparelhoEnvia('categorias', { ...base, privada: true, atualizado_em: '2026-09-24T12:00:00.000Z' });
+    outroAparelhoEnvia('categorias', { ...base, privada: false, atualizado_em: '2026-09-24T09:00:00.000Z' });
+    const [linha] = tabelas.categorias.linhas();
+    expect(nucleo.linhaParaRegistro('categorias', linha).privada).toBe(true);
+  });
+
   it('versão antiga não sobrescreve a mais nova', () => {
     outroAparelhoEnvia('tarefas', tarefa('a', 'nova', '2026-09-24T12:00:00.000Z'));
     outroAparelhoEnvia('tarefas', tarefa('a', 'velha', '2026-09-24T09:00:00.000Z'));

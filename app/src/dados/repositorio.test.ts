@@ -22,6 +22,16 @@ describe('repositório local', () => {
     expect(listas.map((l) => l.id)).toEqual([LISTA_PADRAO_ID]);
   });
 
+  it('categorias iniciais: Pessoal e Saúde privadas; migração marca as antigas uma única vez', async () => {
+    const db = await abrirBanco();
+    // Simula categoria criada antes do campo "privada"
+    await db.put('categorias', { id: 'cat-saude', nome: 'Saúde', cor: '#e5484d', icone: '', ordem: 2, ativo: true, criado_em: 'x', atualizado_em: 'x' } as never);
+    await db.put('categorias', { id: 'minha', nome: 'Viagens', cor: '#000', icone: '', ordem: 3, ativo: true, criado_em: 'x', atualizado_em: 'x' } as never);
+    await garantirDadosIniciais();
+    const porId = Object.fromEntries((await listarTodos('categorias')).map((c) => [c.id, c.privada]));
+    expect(porId).toMatchObject({ 'cat-saude': true, minha: false });
+  });
+
   it('grava e coloca na fila como "criar"', async () => {
     await salvar('tarefas', novaTarefa({ id: 'a', lista_id: 'geral', titulo: 'Comprar pão' }));
     const itens = await fila();
