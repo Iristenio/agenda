@@ -5,6 +5,7 @@ funcionando offline e sincronizando com Google Calendar e Google Tasks.
 
 - Especificação: [ESPECIFICACAO.md](ESPECIFICACAO.md)
 - Plano de implementação: [PLANO.md](PLANO.md)
+- Guia do Google (o que aparece onde): [GUIA-GOOGLE.md](GUIA-GOOGLE.md)
 
 ## Desenvolvimento
 
