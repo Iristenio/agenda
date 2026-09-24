@@ -93,20 +93,39 @@ interface RespostaSync {
   versao?: number;
 }
 
+const esperar = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
+const TENTATIVAS_REDE = 3;
+
 async function chamar(conexao: Conexao, corpo: object): Promise<RespostaSync> {
-  let resposta: Response;
-  try {
-    // text/plain evita a verificação prévia (CORS) que o Apps Script não suporta
-    resposta = await fetch(conexao.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ ...corpo, token: conexao.token }),
-      redirect: 'follow',
-    });
-  } catch {
-    throw new ErroApi('Sem conexão com o servidor');
+  let resposta: Response | null = null;
+  // O Google às vezes devolve uma página de erro passageira (que o navegador vê como falha de rede);
+  // por isso tenta algumas vezes antes de desistir.
+  for (let tentativa = 1; tentativa <= TENTATIVAS_REDE && !resposta; tentativa++) {
+    try {
+      // text/plain evita a verificação prévia (CORS) que o Apps Script não suporta
+      resposta = await fetch(conexao.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ ...corpo, token: conexao.token }),
+        redirect: 'follow',
+        credentials: 'omit',
+      });
+      if (resposta.status >= 500 || resposta.status === 404) {
+        if (tentativa < TENTATIVAS_REDE) resposta = null;
+      }
+    } catch {
+      if (tentativa === TENTATIVAS_REDE) {
+        throw new ErroApi(
+          semInternet()
+            ? 'Sem internet'
+            : 'O servidor do Google não respondeu. Tente de novo em alguns instantes (toque em "Sincronizar agora").',
+        );
+      }
+    }
+    if (!resposta) await esperar(1500 * tentativa);
   }
-  if (!resposta.ok) throw new ErroApi(`Servidor respondeu ${resposta.status}`, resposta.status);
+  resposta = resposta!;
+  if (!resposta.ok) throw new ErroApi(`O servidor do Google respondeu com erro ${resposta.status}. Tente de novo em instantes.`, resposta.status);
   let json: RespostaSync;
   try {
     json = await resposta.json();
