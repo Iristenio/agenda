@@ -160,7 +160,8 @@ Tarefas:
 - [x] Tela **Ajustes**: código de conexão, "Sincronizar agora", "Baixar tudo da planilha" (RS08), preferências.
 - [x] Carga inicial: tudo o que foi criado nas fases 1–3 é enviado à planilha.
 - [x] Testes do ciclo completo com o mesmo núcleo do backend (79 testes) + servidor falso local.
-- [ ] Autorização e teste com o Google de verdade.
+- [x] Autorização e teste com o Google de verdade — tablet sincronizado (24/09/2026).
+- [x] Robustez: novas tentativas automáticas em falhas passageiras do Google; endereço público fixo no código de conexão.
 
 **👤 Sua parte:** autorizar o clasp na sua conta Google (uma vez), autorizar as permissões do script, colar URL e token no tablet.
 
