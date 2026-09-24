@@ -148,6 +148,9 @@ async function chamar(conexao: Conexao, corpo: object): Promise<RespostaSync> {
 export async function conectar(codigo: string): Promise<void> {
   const conexao = decodificarCodigo(codigo);
   if (!conexao) throw new ErroApi('Código de conexão inválido. Ele começa com "AGENDA1:".');
+  if (/\/dev\/?$/.test(conexao.url)) {
+    throw new ErroApi('Este código aponta para o endereço de teste do Apps Script (/dev), que exige login. Execute configurar() de novo para gerar um código com o endereço público.');
+  }
   const r = await chamar(conexao, { acao: 'ping' });
   await salvarInterno('_conexao', { ...conexao, planilha: r.planilha });
   await salvarInterno('_cursor', undefined);

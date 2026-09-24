@@ -1,6 +1,9 @@
 // Configuração inicial — execute a função configurar() uma vez no editor do Apps Script.
 // Cria (ou reaproveita) a planilha, prepara as abas e mostra o código de conexão do app.
 
+/** Endereço público da implantação "Agenda API v1" (atualizada com update-deployment, o endereço não muda). */
+var URL_PUBLICA = 'https://script.google.com/macros/s/AKfycbyT4Muv6bJThcPvxAEYBvMBy3OFdXUlL2DvZGmdo04gl-NBJaQeLjS295c6VpAthzpw/exec';
+
 function configurar() {
   var props = PropertiesService.getScriptProperties();
 
@@ -29,13 +32,11 @@ function configurar() {
     props.setProperty(PROP_TOKEN, token);
   }
 
-  // 4. Código de conexão (endereço do App da Web + token)
-  var url = ScriptApp.getService().getUrl();
+  // 4. Código de conexão (endereço PÚBLICO do App da Web + token).
+  // Atenção: ScriptApp.getService().getUrl() executado no editor devolve o endereço de teste (/dev),
+  // que exige login — por isso o endereço público da implantação fica fixo aqui.
+  var url = URL_PUBLICA;
   Logger.log('Planilha: ' + planilha.getUrl());
-  if (!url) {
-    Logger.log('⚠️ Ainda não há implantação como App da Web. Implante e execute configurar() de novo.');
-    return;
-  }
   var codigo = 'AGENDA1:' + Utilities.base64EncodeWebSafe(JSON.stringify({ u: url, t: token }));
   Logger.log('================ CÓDIGO DE CONEXÃO ================');
   Logger.log(codigo);

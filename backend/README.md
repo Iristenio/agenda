@@ -14,6 +14,9 @@ npx @google/clasp update-deployment <ID_DA_IMPLANTACAO> --description "..."
 
 `update-deployment` mantém o mesmo endereço (os aparelhos não precisam reconectar).
 
+> O endereço público fica fixo em `URL_PUBLICA` (configurar.js): `ScriptApp.getService().getUrl()`, executado
+> no editor, devolve o endereço de teste `/dev`, que exige login e não funciona no app.
+
 ## Primeira configuração
 
 1. Abra o projeto no editor do Apps Script.
