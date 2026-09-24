@@ -94,46 +94,52 @@ interface RespostaSync {
 }
 
 const esperar = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
-const TENTATIVAS_REDE = 3;
+const TENTATIVAS = 4;
 
-async function chamar(conexao: Conexao, corpo: object): Promise<RespostaSync> {
-  let resposta: Response | null = null;
-  // O Google às vezes devolve uma página de erro passageira (que o navegador vê como falha de rede);
-  // por isso tenta algumas vezes antes de desistir.
-  for (let tentativa = 1; tentativa <= TENTATIVAS_REDE && !resposta; tentativa++) {
-    try {
-      // text/plain evita a verificação prévia (CORS) que o Apps Script não suporta
-      resposta = await fetch(conexao.url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ ...corpo, token: conexao.token }),
-        redirect: 'follow',
-        credentials: 'omit',
-      });
-      if (resposta.status >= 500 || resposta.status === 404) {
-        if (tentativa < TENTATIVAS_REDE) resposta = null;
-      }
-    } catch {
-      if (tentativa === TENTATIVAS_REDE) {
-        throw new ErroApi(
-          semInternet()
-            ? 'Sem internet'
-            : 'O servidor do Google não respondeu. Tente de novo em alguns instantes (toque em "Sincronizar agora").',
-        );
-      }
-    }
-    if (!resposta) await esperar(1500 * tentativa);
-  }
-  resposta = resposta!;
-  if (!resposta.ok) throw new ErroApi(`O servidor do Google respondeu com erro ${resposta.status}. Tente de novo em instantes.`, resposta.status);
-  let json: RespostaSync;
+/** Uma tentativa; devolve a resposta do backend ou lança um erro com a causa. */
+async function tentar(conexao: Conexao, corpo: object): Promise<RespostaSync> {
+  let resposta: Response;
   try {
-    json = await resposta.json();
+    // text/plain evita a verificação prévia (CORS) que o Apps Script não suporta
+    resposta = await fetch(conexao.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ ...corpo, token: conexao.token }),
+      redirect: 'follow',
+      credentials: 'omit',
+    });
   } catch {
-    throw new ErroApi('Resposta inválida do servidor (a implantação do Apps Script está como "Qualquer pessoa"?)');
+    throw new Error(semInternet() ? 'Sem internet' : 'O servidor do Google não respondeu');
   }
-  if (!json.ok) throw new ErroApi(json.erro ?? 'Erro no servidor', json.codigo);
-  return json;
+  if (!resposta.ok) throw new Error(`O servidor do Google respondeu com erro ${resposta.status}`);
+  try {
+    return await resposta.json();
+  } catch {
+    throw new Error('O Google devolveu uma página de erro em vez da resposta');
+  }
+}
+
+/**
+ * Chama o backend. O Google às vezes falha de forma passageira (página de erro, lentidão),
+ * então tenta algumas vezes com espera crescente. Reenviar é seguro: o servidor ignora
+ * versões repetidas ou mais antigas.
+ */
+async function chamar(conexao: Conexao, corpo: object): Promise<RespostaSync> {
+  let ultimoErro = '';
+  for (let tentativa = 1; tentativa <= TENTATIVAS; tentativa++) {
+    try {
+      const json = await tentar(conexao, corpo);
+      // Resposta válida do backend: erros dele (ex.: token inválido) não adianta repetir
+      if (!json.ok) throw new ErroApi(json.erro ?? 'Erro no servidor', json.codigo);
+      return json;
+    } catch (e) {
+      if (e instanceof ErroApi) throw e;
+      ultimoErro = e instanceof Error ? e.message : String(e);
+      if (semInternet()) break;
+      if (tentativa < TENTATIVAS) await esperar(1500 * tentativa);
+    }
+  }
+  throw new ErroApi(`${ultimoErro}. O app tentará de novo sozinho em instantes.`);
 }
 
 /* ---------------- Conectar / desconectar ---------------- */
