@@ -173,13 +173,13 @@ Tarefas:
 **Objetivo:** compromissos, aniversários e férias no Google Calendar (app → Google).
 
 Tarefas:
-- [ ] Ativar o serviço avançado do Calendar; criar/reaproveitar os calendários "Aniversários", "Férias – Pessoais", "Férias – Equipe" (§2.1).
-- [ ] Criar/alterar/excluir compromissos simples, com lembretes (RN16).
-- [ ] Séries recorrentes via RRULE; alterações de ocorrência única (instâncias) e exclusões (EXDATE).
-- [ ] "Esta e as seguintes": encerrar série original + criar nova.
-- [ ] Desligar sincronização de um item remove o evento do Google (RN17).
-- [ ] Aniversários como eventos anuais; férias como eventos de dia inteiro (RN37).
-- [ ] Testes manuais roteirizados (checklist) comparando app × Google Calendar.
+- [x] Ativar o serviço avançado do Calendar; criar/reaproveitar os calendários "Aniversários", "Férias – Pessoais", "Férias – Equipe" (§2.1).
+- [x] Criar/alterar/excluir compromissos simples, com lembretes (RN16).
+- [x] Séries recorrentes via RRULE; ocorrência alterada vira evento avulso + EXDATE na série; exclusões (EXDATE).
+- [x] "Esta e as seguintes": encerrar série original + criar nova.
+- [x] Desligar sincronização de um item remove o evento do Google (RN17).
+- [x] Aniversários como eventos anuais; férias como eventos de dia inteiro (RN37).
+- [x] Testes manuais roteirizados (checklist) comparando app × Google Calendar.
 
 **✅ Pronto quando:** tudo o que aparece no calendário do app aparece igual no Google Calendar do celular, inclusive séries com exceções — e os lembretes do Google tocam.
 
@@ -189,12 +189,15 @@ Tarefas:
 **Objetivo:** tarefas espelhadas no Google Tasks, com retorno.
 
 Tarefas:
-- [ ] Ativar o serviço avançado do Tasks; criar as listas correspondentes.
-- [ ] Envio: tarefas, prioridade como prefixo nas notas, conclusão.
-- [ ] Retorno: alterações desde o cursor (RT01, RS10) — conclusão, título, notas, prazo, exclusão, lista.
-- [ ] Tarefas e listas novas criadas no Google entram no app (RT03, RT09).
-- [ ] Regras de prazo, prioridade, recorrência e conflito (RT04–RT07).
-- [ ] Testes de conflito (alterar a mesma tarefa nos dois lados offline).
+> ✅ Implementada em 24/09/2026 (implantação @4). Envio + recebimento, importação de listas/tarefas do Google,
+> conflito RT07, próxima ocorrência gerada no app (RT06). 105 testes.
+
+- [x] Ativar o serviço avançado do Tasks; criar as listas correspondentes.
+- [x] Envio: tarefas, prioridade como prefixo nas notas, conclusão.
+- [x] Retorno: alterações desde o cursor (RT01, RS10) — conclusão, título, notas, prazo, exclusão, lista.
+- [x] Tarefas e listas novas criadas no Google entram no app (RT03, RT09).
+- [x] Regras de prazo, prioridade, recorrência e conflito (RT04–RT07).
+- [x] Testes de conflito (alterar a mesma tarefa nos dois lados offline).
 
 **✅ Pronto quando:** concluir uma tarefa no Google Tasks do celular faz ela aparecer concluída no tablet na próxima sincronização — e vice-versa.
 
