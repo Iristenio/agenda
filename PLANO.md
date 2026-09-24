@@ -110,16 +110,17 @@ Tarefas:
 **Objetivo:** a agenda propriamente dita.
 
 Tarefas:
-- [ ] Categorias de compromisso (nome, cor, ícone).
-- [ ] Formulário de compromisso no painel lateral (RN10, RN11), com lembretes.
-- [ ] Visões **Dia · Semana · Mês**; semana como padrão em paisagem.
-- [ ] Deslizar para navegar entre períodos; botão "Hoje".
-- [ ] Tocar e arrastar num horário vazio para criar compromisso naquele intervalo.
-- [ ] Compromissos recorrentes (RN14) com expansão das ocorrências para exibição.
-- [ ] Editar/excluir série: "só esta / esta e as seguintes / todas" (RN15).
-- [ ] Alerta de choque de horário (RN12).
-- [ ] Tarefas com prazo como marcadores no calendário (RN25).
-- [ ] Testes de `compromissos.ts` e dos casos de série (divisão, exceções, exclusões).
+- [x] Categorias de compromisso (nome, cor); iniciais: Pessoal, Trabalho, Saúde; criação rápida no formulário.
+- [x] Formulário de compromisso no painel lateral (RN10, RN11), com lembretes.
+- [x] Visões **Dia · Semana · Mês**; semana como padrão (a última visão usada é lembrada).
+- [x] Deslizar para navegar entre períodos; botão "Hoje".
+- [x] Tocar num horário vazio cria compromisso de 1 h; tocar, segurar e arrastar escolhe o intervalo.
+- [x] Compromissos recorrentes (RN14) com expansão das ocorrências para exibição.
+- [x] Editar/excluir série: "só esta / esta e as seguintes / todas" (RN15).
+- [x] Alerta de choque de horário (RN12).
+- [x] Tarefas com prazo como marcadores no calendário (RN25).
+- [x] Testes de `compromissos.ts` e dos casos de série (53 testes no total).
+- [x] Extra: agenda do dia na tela Hoje (em curso / próximo / já passou).
 
 **✅ Pronto quando:** você consegue montar sua semana real no tablet, incluindo compromissos recorrentes e alterações pontuais em uma ocorrência.
 

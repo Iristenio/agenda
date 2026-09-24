@@ -1,7 +1,9 @@
 // Tela inicial: agenda do dia · tarefas · radar.
 import { useState } from 'preact/hooks';
 import { estaAtrasada, ordenarTarefas } from '../../dominio/tarefas';
-import { hojeISO } from '../../dominio/datas';
+import { agoraDataHora, hojeISO } from '../../dominio/datas';
+import type { Ocorrencia } from '../../dominio/compromissos';
+import { corDaOcorrencia, useDadosPeriodo } from '../calendario/comum';
 import { LISTA_PADRAO_ID } from '../../dados/repositorio';
 import { useAgora, useEntidade } from '../../dados/ganchos';
 import { criarTarefaRapida } from '../acoes/tarefas';
@@ -22,14 +24,7 @@ export function TelaHoje() {
       </header>
       <div class="conteudo">
         <div class="colunas">
-          <section class="cartao">
-            <h2><IconeRelogio /> Agenda do dia</h2>
-            <div class="vazio">
-              <IconeCalendario />
-              <strong>Dia livre</strong>
-              Os compromissos aparecem aqui a partir da etapa 2.
-            </div>
-          </section>
+          <CartaoAgenda agora={agora} />
           <CartaoTarefas agora={agora} />
           <section class="cartao">
             <h2><IconeAlerta /> Radar</h2>
@@ -42,6 +37,77 @@ export function TelaHoje() {
         </div>
       </div>
     </>
+  );
+}
+
+/** Compromissos de hoje em linha do tempo; o que já passou fica esmaecido. */
+function CartaoAgenda({ agora }: { agora: Date }) {
+  const { abrirPainel, setDataFoco, setVisao } = useEstado();
+  const hoje = hojeISO(agora);
+  const { ocorrencias, categorias } = useDadosPeriodo(hoje, hoje);
+  const agoraTexto = agoraDataHora(agora);
+  const diaInteiro = ocorrencias.filter((o) => o.compromisso.dia_inteiro);
+  const comHora = ocorrencias.filter((o) => !o.compromisso.dia_inteiro);
+  const proximo = comHora.find((o) => o.fim > agoraTexto);
+
+  const abrir = (o: Ocorrencia) => abrirPainel({ tipo: 'compromisso', id: o.compromisso.id, data: o.data_original ?? undefined });
+  const hora = (dh: string) => (dh.slice(0, 10) === hoje ? dh.slice(11, 16) : '…');
+
+  return (
+    <section class="cartao">
+      <h2>
+        <IconeRelogio /> Agenda do dia
+        {comHora.length + diaInteiro.length > 0 && <span class="contagem">{comHora.length + diaInteiro.length}</span>}
+      </h2>
+      {diaInteiro.map((o) => (
+        <button key={o.chave} class="agenda-inteiro" style={{ '--cor': corDaOcorrencia(o, categorias) }} onClick={() => abrir(o)}>
+          {o.compromisso.titulo} <small>dia todo</small>
+        </button>
+      ))}
+      {comHora.length === 0 && diaInteiro.length === 0 ? (
+        <div class="vazio">
+          <IconeCalendario />
+          <strong>Dia livre</strong>
+          Nenhum compromisso hoje.
+        </div>
+      ) : (
+        <ol class="agenda-lista">
+          {comHora.map((o) => {
+            const passou = o.fim <= agoraTexto;
+            const emCurso = o.inicio <= agoraTexto && !passou;
+            return (
+              <li key={o.chave}>
+                <button
+                  class={`agenda-item${passou ? ' passou' : ''}${emCurso ? ' em-curso' : ''}${o === proximo && !emCurso ? ' proximo' : ''}`}
+                  style={{ '--cor': corDaOcorrencia(o, categorias) }}
+                  onClick={() => abrir(o)}
+                >
+                  <span class="agenda-hora">
+                    {hora(o.inicio)}
+                    <small>{hora(o.fim)}</small>
+                  </span>
+                  <span class="agenda-texto">
+                    <strong>{o.compromisso.titulo}</strong>
+                    {emCurso && <em>agora</em>}
+                    {o.compromisso.local && <small>{o.compromisso.local}</small>}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+      <button
+        class="link"
+        onClick={() => {
+          setDataFoco(hoje);
+          setVisao('dia');
+          irPara('calendario');
+        }}
+      >
+        Abrir no calendário →
+      </button>
+    </section>
   );
 }
 

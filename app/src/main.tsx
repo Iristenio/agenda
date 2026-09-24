@@ -4,6 +4,7 @@ import { garantirDadosIniciais, pedirArmazenamentoPersistente } from './dados/re
 import './estilos/global.css';
 import './estilos/formularios.css';
 import './estilos/tarefas.css';
+import './estilos/calendario.css';
 
 garantirDadosIniciais();
 pedirArmazenamentoPersistente();

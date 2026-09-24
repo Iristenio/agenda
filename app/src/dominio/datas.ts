@@ -33,6 +33,48 @@ export function diferencaDias(a: string, b: string): number {
   return Math.round(ms / 86_400_000);
 }
 
+/* ---- Data-hora local "AAAA-MM-DDTHH:mm" (aritmética em UTC "flutuante", imune a fuso) ---- */
+
+function deDataHora(texto: string): number {
+  const [data, hora = '00:00'] = texto.split('T');
+  const [a, m, d] = data.split('-').map(Number);
+  const [h, min] = hora.split(':').map(Number);
+  return Date.UTC(a, m - 1, d, h, min);
+}
+
+export function somarMinutos(texto: string, minutos: number): string {
+  return new Date(deDataHora(texto) + minutos * 60_000).toISOString().slice(0, 16);
+}
+
+export function diferencaMinutos(a: string, b: string): number {
+  return Math.round((deDataHora(b) - deDataHora(a)) / 60_000);
+}
+
+export function agoraDataHora(agora = new Date()): string {
+  return `${paraDataISO(agora)}T${paraHora(agora)}`;
+}
+
+/** Dia da semana (0 = domingo) de uma data "AAAA-MM-DD". */
+export function diaDaSemana(texto: string): number {
+  return deDataISO(texto).getDay();
+}
+
+/** Primeiro dia da semana que contém a data. */
+export function inicioDaSemana(texto: string, primeiroDia: 0 | 1 = 0): string {
+  const dif = (diaDaSemana(texto) - primeiroDia + 7) % 7;
+  return somarDias(texto, -dif);
+}
+
+export function inicioDoMes(texto: string): string {
+  return `${texto.slice(0, 7)}-01`;
+}
+
+export function somarMeses(texto: string, meses: number): string {
+  const d = deDataISO(inicioDoMes(texto));
+  d.setMonth(d.getMonth() + meses);
+  return paraDataISO(d);
+}
+
 export function agoraISO(agora = new Date()): string {
   return agora.toISOString();
 }

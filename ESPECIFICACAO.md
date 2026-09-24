@@ -233,6 +233,10 @@ ids dos calendários Google · id da lista padrão do Google Tasks · data da ú
   - **Todas:** altera a série inteira; exceções já existentes são preservadas.
 - **RN16** — Com `sync_google = sim`, as operações são replicadas no Google na mesma lógica (instância, divisão da série ou série inteira).
 - **RN17** — Desligar `sync_google` em um item já sincronizado **remove** o evento do Google (mediante confirmação).
+- **RN18** — Ocorrências de uma série são identificadas pela **data original** (no máximo uma por dia). `excecoes` guarda datas "AAAA-MM-DD".
+- **RN19** — "Esta e as seguintes" na primeira ocorrência equivale a "Todas". Alterações feitas separadamente em ocorrências futuras deixam de valer ao dividir a série. Se a série terminava após N vezes, o total é mantido (a nova série fica com as restantes).
+- **RN19a** — Editar em "Todas" a partir de uma ocorrência do meio aplica a mudança de horário como deslocamento sobre a série inteira. Remover a repetição em "Todas" transforma a série num compromisso único na data editada.
+- **RN19b** — Categorias iniciais: Pessoal, Trabalho, Saúde. Excluir uma categoria deixa seus compromissos sem categoria.
 
 ### 4.3 Tarefas
 - **RN20** — Só o título é obrigatório; a lista padrão é "Geral".

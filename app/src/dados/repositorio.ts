@@ -126,11 +126,26 @@ export async function salvarConfig(parcial: Partial<Config>) {
 
 export const LISTA_PADRAO_ID = 'geral';
 
-/** Cria a lista "Geral" na primeira execução (id fixo, para não duplicar ao restaurar). */
+const CATEGORIAS_INICIAIS = [
+  { id: 'cat-pessoal', nome: 'Pessoal', cor: '#30a46c' },
+  { id: 'cat-trabalho', nome: 'Trabalho', cor: '#2f6fed' },
+  { id: 'cat-saude', nome: 'Saúde', cor: '#e5484d' },
+];
+
+/** Cria a lista "Geral" e as categorias iniciais na primeira execução (ids fixos, para não duplicar ao restaurar). */
 export async function garantirDadosIniciais(agora = new Date()) {
   const db = await abrirBanco();
-  if (await db.get('listas', LISTA_PADRAO_ID)) return;
   const carimbo = agora.toISOString();
+  if ((await db.count('categorias')) === 0) {
+    await gravar(
+      CATEGORIAS_INICIAIS.map((c, ordem) => ({
+        entidade: 'categorias' as const,
+        registro: { ...c, icone: '', ordem, ativo: true, criado_em: carimbo, atualizado_em: carimbo },
+      })),
+      agora,
+    );
+  }
+  if (await db.get('listas', LISTA_PADRAO_ID)) return;
   await gravar(
     [
       {

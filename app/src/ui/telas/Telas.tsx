@@ -1,14 +1,11 @@
 // Telas ainda provisórias (estrutura e estados vazios). O conteúdo real chega nas próximas etapas.
 import type { ComponentChildren } from 'preact';
-import { IconeCalendario, IconeConfig, IconeFerias } from '../icones';
+import { IconeConfig, IconeFerias } from '../icones';
 
-const formatarMesAno = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
-
-function Cabecalho({ titulo, sub }: { titulo: string; sub?: string }) {
+function Cabecalho({ titulo }: { titulo: string }) {
   return (
     <header class="cabecalho">
       <h1>{titulo}</h1>
-      {sub && <span class="sub">{sub}</span>}
     </header>
   );
 }
@@ -20,19 +17,6 @@ function Vazio({ icone, titulo, children }: { icone: ComponentChildren; titulo: 
       <strong>{titulo}</strong>
       {children}
     </div>
-  );
-}
-
-export function TelaCalendario() {
-  return (
-    <>
-      <Cabecalho titulo="Calendário" sub={formatarMesAno.format(new Date())} />
-      <div class="conteudo">
-        <Vazio icone={<IconeCalendario />} titulo="Calendário em construção">
-          As visões de dia, semana e mês chegam na etapa 2.
-        </Vazio>
-      </div>
-    </>
   );
 }
 
