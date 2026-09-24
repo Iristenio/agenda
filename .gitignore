@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dev-dist/
+*.log
+.env
+.env.*
+.clasprc.json
+.DS_Store
+Thumbs.db
