@@ -78,13 +78,17 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px;
+  width: 100%;
+  min-height: 44px;
+  margin-bottom: 8px;
   padding: 0 4px;
-  font-size: 15px;
-  font-weight: 700;
+  border-bottom: 2px solid currentColor;
+  font-size: 17px;
+  font-weight: 750;
   color: var(--texto-2);
   cursor: default;
 }
+.grupo-titulo .contagem { background: transparent; border: 1.5px solid currentColor; color: inherit; }
 .grupo-titulo:not(:disabled) { cursor: pointer; }
 .grupo-atrasadas .grupo-titulo { color: var(--perigo); }
 .grupo-hoje .grupo-titulo { color: var(--primaria); }
