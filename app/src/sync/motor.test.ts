@@ -133,6 +133,21 @@ describe('sincronização', () => {
     expect(tabelas.tarefas.linhas()).toHaveLength(120);
   });
 
+  it('tarefa recorrente concluída fora (ex.: Google Tasks) gera a próxima aqui, com id previsível (RT06)', async () => {
+    const { paraRRule, recorrenciaPadrao } = await import('../dominio/recorrencia');
+    const rrule = paraRRule(recorrenciaPadrao('semanal', '2026-09-21'), '2026-09-21');
+    await salvar('tarefas', { ...tarefa('rec', 'Relatório semanal'), prazo: '2026-09-21', rrule });
+    await sincronizar();
+    // Concluída no Google (o servidor grava na planilha com atualizado_em mais novo)
+    outroAparelhoEnvia('tarefas', { ...tarefa('rec', 'Relatório semanal', '2099-01-01T00:00:00.000Z'), prazo: '2026-09-21', rrule, status: 'concluida', concluida_em: '2026-09-22T10:00:00.000Z' });
+    await sincronizar();
+    const proxima = await buscar('tarefas', 'rec~prox');
+    expect(proxima).toMatchObject({ prazo: '2026-09-28', status: 'pendente', tarefa_origem_id: 'rec' });
+    expect((await buscar('tarefas', 'rec'))?.proxima_gerada_id).toBe('rec~prox');
+    // e ela foi enviada ao servidor
+    expect(tabelas.tarefas.linhas().some((l: string[]) => l[0] === 'rec~prox')).toBe(true);
+  });
+
   it('"baixar tudo" restaura um aparelho vazio', async () => {
     outroAparelhoEnvia('tarefas', tarefa('t1', 'a'));
     outroAparelhoEnvia('listas', { id: 'geral', nome: 'Geral', cor: '#000', ordem: 0, ativo: true, google_tasklist_id: null, criado_em: 'x', atualizado_em: 'x' });

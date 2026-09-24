@@ -154,6 +154,8 @@ function dependentesGoogle(entidade, reg, todos) {
     if (reg.serie_id) chaves.push('compromissos:' + reg.serie_id); // o EXDATE da série muda
   } else if (entidade === 'eventos') {
     chaves.push('eventos:' + reg.id);
+  } else if (entidade === 'tarefas' || entidade === 'listas') {
+    chaves.push(entidade + ':' + reg.id);
   } else if (entidade === 'pessoas') {
     chaves.push('pessoas:' + reg.id);
     // O título das férias usa o nome da pessoa

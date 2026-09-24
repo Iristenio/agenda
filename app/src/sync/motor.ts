@@ -3,11 +3,14 @@
 // Um ciclo = uma ou mais chamadas "sincronizar" ao backend. Cada chamada:
 //   1) envia um lote da fila local (até 50 alterações);
 //   2) recebe tudo o que o servidor recebeu depois do último cursor (de qualquer aparelho).
-import type { Entidade, ItemFila, Registro } from '../dominio/tipos';
+import type { Entidade, ItemFila, Registro, Tarefa } from '../dominio/tipos';
+import { concluirTarefa } from '../dominio/tarefas';
 import {
   aoGravarLocal,
   aplicarRemotos,
+  buscar,
   confirmarEnvio,
+  gravar,
   lerInterno,
   listarFila,
   registrarFalhas,
@@ -254,13 +257,14 @@ async function ciclo() {
       await confirmarEnvio(sucessos);
       if (falhas.length) await registrarFalhas(falhas);
       await aplicarRemotos(r.dados ?? {});
+      const geradas = await gerarProximasRecorrentes((r.dados?.tarefas ?? []) as Tarefa[]);
       if (r.cursor) await salvarInterno('_cursor', r.cursor);
       if (r.google) definir({ google: r.google });
 
       fila = await listarFila();
       voltas++;
-      // Continua enquanto houver mais itens do que cabem num lote e houve progresso
-      if (!(lote.length === TAMANHO_LOTE && sucessos.length > 0)) break;
+      // Continua enquanto houver mais itens do que cabem num lote (com progresso) ou itens recém-gerados
+      if (!((lote.length === TAMANHO_LOTE && sucessos.length > 0) || geradas > 0)) break;
     } while (fila.length && voltas < 50);
 
     falhasSeguidas = 0;
@@ -276,6 +280,28 @@ async function ciclo() {
     const espera = Math.min(INTERVALO_MS, 5_000 * 3 ** (falhasSeguidas - 1));
     timerRetentativa = setTimeout(() => sincronizar(), espera);
   }
+}
+
+/**
+ * RT06 — tarefa recorrente concluída fora deste aparelho (ex.: no Google Tasks) ainda sem a
+ * próxima ocorrência: gera a próxima aqui. O id é previsível ("<id>~prox") para que dois
+ * aparelhos fazendo isso ao mesmo tempo gravem a MESMA tarefa, sem duplicar.
+ */
+async function gerarProximasRecorrentes(recebidas: Tarefa[]): Promise<number> {
+  let geradas = 0;
+  for (const r of recebidas) {
+    if (r.status !== 'concluida' || !r.rrule || !r.prazo || r.proxima_gerada_id) continue;
+    const local = await buscar('tarefas', r.id);
+    if (!local || local.status !== 'concluida' || local.proxima_gerada_id) continue;
+    const { concluida, proxima } = concluirTarefa({ ...local, status: 'pendente' }, () => `${local.id}~prox`);
+    if (!proxima) continue;
+    await gravar([
+      { entidade: 'tarefas', registro: { ...concluida, concluida_em: local.concluida_em } },
+      { entidade: 'tarefas', registro: proxima },
+    ]);
+    geradas++;
+  }
+  return geradas;
 }
 
 /* ---------------- Início automático ---------------- */

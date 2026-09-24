@@ -200,6 +200,11 @@ Tarefas:
 
 ---
 
+### Fase 6.5 — Eventos do Google no app (opção A, aprovada) `M`
+- [ ] Mostrar no calendário do app, **somente leitura** e com cor própria, os eventos do Google Agenda criados fora do app
+      (convites, reuniões da UNILAB, agendas assinadas).
+- [ ] Guia: o que se vê e o que se edita em cada lugar, considerando a agenda pessoal conectada à da UNILAB.
+
 ### Fase 7 — Refinamento `P`
 - [ ] Ajustes de usabilidade a partir do uso real.
 - [ ] Desempenho com muitos dados (ex.: 2 anos de compromissos).

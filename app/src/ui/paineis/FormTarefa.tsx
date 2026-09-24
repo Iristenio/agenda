@@ -154,7 +154,7 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
 
       <label class="interruptor">
         <input type="checkbox" checked={t.sync_google} onChange={(e) => mudar({ sync_google: e.currentTarget.checked })} />
-        <span>Enviar ao Google Tasks <small>(a partir da etapa 6)</small></span>
+        <span>Enviar ao Google Tasks</span>
       </label>
 
       {erros.length > 0 && (

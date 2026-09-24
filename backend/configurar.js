@@ -23,7 +23,6 @@ function configurar() {
   });
   prepararAba(planilha, ABA_LOG, ['data_hora', 'entidade', 'registro_id', 'operacao', 'resultado', 'mensagem']);
   prepararAba(planilha, ABA_GOOGLE, COLUNAS_GOOGLE);
-  props.setProperty(PROP_ESTRUTURA, VERSAO_ESTRUTURA);
   var padrao = planilha.getSheetByName('Página1') || planilha.getSheetByName('Sheet1');
   if (padrao && planilha.getSheets().length > 1) planilha.deleteSheet(padrao);
 
@@ -34,6 +33,14 @@ function configurar() {
     marcarTudoPendenteGoogle(planilha, tabelasDaPlanilha(planilha));
     props.setProperty(PROP_GOOGLE, 'SIM');
     Logger.log('Google Agenda ativado: os registros existentes serão enviados nos próximos minutos.');
+  }
+
+  // 3b. Google Tasks: pede a autorização (acessando a lista padrão) e liga a integração.
+  // O envio inicial acontece na primeira sincronização feita pela versão nova da API.
+  idListaPadrao();
+  if (props.getProperty(PROP_TASKS) !== 'SIM') {
+    props.setProperty(PROP_TASKS, 'SIM');
+    Logger.log('Google Tasks autorizado: as tarefas serão enviadas após a atualização da API.');
   }
 
   // 4. Token secreto

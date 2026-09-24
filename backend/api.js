@@ -6,7 +6,7 @@ var PROP_TOKEN = 'TOKEN';
 var ABA_LOG = 'LOG_SYNC';
 var MAX_LINHAS_LOG = 3000;
 var PROP_ESTRUTURA = 'ESTRUTURA';
-var VERSAO_ESTRUTURA = '2';
+var VERSAO_ESTRUTURA = '3';
 var PROP_GOOGLE = 'GOOGLE_AGENDA_ATIVO';
 var PRAZO_GOOGLE_MS = 15000;
 
@@ -21,6 +21,11 @@ function garantirEstrutura(planilha) {
   if (props.getProperty(PROP_ESTRUTURA) === VERSAO_ESTRUTURA) return;
   prepararAba(planilha, ABA_GOOGLE, COLUNAS_GOOGLE);
   props.setProperty(PROP_ESTRUTURA, VERSAO_ESTRUTURA);
+  // Primeira execução da versão com Google Tasks: envia todas as listas e tarefas
+  if (tasksAtivo() && props.getProperty('TASKS_ENVIO_INICIAL') !== 'SIM') {
+    marcarTudoPendenteGoogle(planilha, tabelasDaPlanilha(planilha), ENTIDADES_TASKS);
+    props.setProperty('TASKS_ENVIO_INICIAL', 'SIM');
+  }
 }
 
 function doGet() {
@@ -41,21 +46,10 @@ function doPost(e) {
         var planilha = abrirPlanilha();
         garantirEstrutura(planilha);
         var tabelas = tabelasDaPlanilha(planilha);
-        resposta = processar(tabelas, req, new Date().toISOString());
-        if (resposta.log && resposta.log.length) registrarLog(planilha, resposta.log);
-        delete resposta.log;
-        if (req.acao === 'ping') resposta.planilha = planilha.getUrl();
-
-        // Google Agenda: marca o que mudou e envia o que der em poucos segundos (o resto vai pelo gatilho)
-        if (resposta.ok && googleAtivo()) {
-          if (req.acao === 'sincronizar') {
-            var aplicadas = (req.operacoes || []).filter(function (op, i) {
-              var r = resposta.resultados[i];
-              return r && r.ok && !r.ignorado;
-            });
-            marcarPendentesGoogle(planilha, tabelas, aplicadas);
-          }
-          resposta.google = processarGoogle(planilha, tabelas, req.acao === 'sincronizar' ? PRAZO_GOOGLE_MS : 0);
+        resposta = req.acao === 'sincronizar' ? sincronizar(planilha, tabelas, req) : processar(tabelas, req, new Date().toISOString());
+        if (req.acao === 'ping') {
+          resposta.planilha = planilha.getUrl();
+          if (googleAtivo()) resposta.google = tabelaGoogle(planilha).resumo();
         }
       } finally {
         trava.releaseLock();
@@ -65,6 +59,47 @@ function doPost(e) {
     resposta = { ok: false, erro: String(erro && erro.message ? erro.message : erro) };
   }
   return ContentService.createTextOutput(JSON.stringify(resposta)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Sincronização de um aparelho:
+ *  1) grava as alterações enviadas;
+ *  2) Google: marca pendências e envia o que der em poucos segundos (o resto vai pelo gatilho);
+ *  3) traz novidades do Google Tasks para a planilha;
+ *  4) devolve tudo o que mudou desde o cursor do aparelho (inclusive o que veio do Google).
+ */
+function sincronizar(planilha, tabelas, req) {
+  var agora = new Date().toISOString();
+  var operacoes = req.operacoes || [];
+  var aplicado = aplicarOperacoes(tabelas, operacoes, agora);
+  if (aplicado.log.length) registrarLog(planilha, aplicado.log);
+
+  var google = null;
+  if (googleAtivo()) {
+    var controle = tabelaGoogle(planilha);
+    var aplicadas = operacoes.filter(function (op, i) {
+      var r = aplicado.resultados[i];
+      return r && r.ok && !r.ignorado;
+    });
+    marcarPendentesGoogle(planilha, tabelas, aplicadas, controle);
+    processarGoogle(planilha, tabelas, PRAZO_GOOGLE_MS, controle);
+    try {
+      puxarTarefasGoogle(planilha, tabelas, controle, false);
+    } catch (e) {
+      Logger.log('Falha ao trazer do Google Tasks: ' + textoErro(e));
+    }
+    google = controle.resumo();
+  }
+
+  var cursor = new Date().toISOString();
+  return {
+    ok: true,
+    versao: VERSAO_API,
+    resultados: aplicado.resultados,
+    dados: alteracoesDesde(tabelas, req.cursor || null),
+    cursor: cursor,
+    google: google,
+  };
 }
 
 function abrirPlanilha() {
