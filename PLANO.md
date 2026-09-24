@@ -151,13 +151,16 @@ Tarefas:
 **Objetivo:** dados salvos na sua conta Google; backup e restauração.
 
 Tarefas:
-- [ ] Projeto Apps Script com clasp, versionado em `backend/`.
-- [ ] Criação automática da planilha com todas as abas (§3 da especificação), cabeçalhos e formatação.
-- [ ] API `doPost` com validação de token; operações idempotentes por `id` (RS04); registro em LOG_SYNC.
-- [ ] Motor de sincronização no app: envio em ordem, compactação, novas tentativas com intervalo crescente (RS02, RS03, RS06).
-- [ ] Indicador de sincronização 🟢🟡⚪🔴 no menu lateral (RS07).
-- [ ] Tela **Configurações**: URL do backend, token, "Sincronizar agora", "Restaurar da planilha" (RS08).
-- [ ] Carga inicial: tudo o que foi criado nas fases 1–3 é enviado à planilha.
+- [x] Projeto Apps Script com clasp, versionado em `backend/` (conta UNILAB).
+- [x] Criação automática da planilha com todas as abas (§3 da especificação), cabeçalhos e formatação.
+- [x] API `doPost` com validação de token; operações idempotentes por `id` (RS04); registro em LOG_SYNC.
+- [x] Motor de sincronização no app: envio em lotes, compactação, novas tentativas com intervalo crescente (RS02, RS03, RS06).
+- [x] Recebimento das alterações de outros aparelhos (RS11) — tablet e celular ficam iguais.
+- [x] Indicador de sincronização no menu lateral (RS07).
+- [x] Tela **Ajustes**: código de conexão, "Sincronizar agora", "Baixar tudo da planilha" (RS08), preferências.
+- [x] Carga inicial: tudo o que foi criado nas fases 1–3 é enviado à planilha.
+- [x] Testes do ciclo completo com o mesmo núcleo do backend (79 testes) + servidor falso local.
+- [ ] Autorização e teste com o Google de verdade.
 
 **👤 Sua parte:** autorizar o clasp na sua conta Google (uma vez), autorizar as permissões do script, colar URL e token no tablet.
 

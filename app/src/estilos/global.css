@@ -130,7 +130,14 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
   border-radius: 50%;
   background: var(--texto-2);
 }
-.status-ponto.online { background: var(--sucesso); }
+.status-ponto.sincronizado { background: var(--sucesso); }
+.status-ponto.pendente { background: var(--aviso); }
+.status-ponto.sincronizando { background: var(--primaria); animation: pulsar 1s ease-in-out infinite; }
+.status-ponto.erro { background: var(--perigo); }
+.status-ponto.offline { background: transparent; border: 2px solid var(--texto-2); }
+.status-ponto.desconectado { background: var(--borda); }
+.status-sync small { font-weight: 700; }
+@keyframes pulsar { 50% { opacity: 0.3; } }
 
 /* ---- Área principal ---- */
 .principal {

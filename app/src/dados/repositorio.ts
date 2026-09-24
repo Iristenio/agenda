@@ -27,6 +27,14 @@ function avisarMudanca() {
   ouvintes.forEach((fn) => fn());
 }
 
+/** Avisos só de gravações feitas NESTE aparelho (disparam o envio ao servidor). */
+const ouvintesGravacao = new Set<() => void>();
+
+export function aoGravarLocal(fn: () => void): () => void {
+  ouvintesGravacao.add(fn);
+  return () => ouvintesGravacao.delete(fn);
+}
+
 /* ---------------- Leitura ---------------- */
 
 export async function listarTodos<E extends Entidade>(entidade: E): Promise<MapaEntidades[E][]> {
@@ -92,6 +100,7 @@ export async function gravar(alteracoes: Alteracao[], agora = new Date()): Promi
 
   await tx.done;
   avisarMudanca();
+  ouvintesGravacao.forEach((fn) => fn());
   return anteriores;
 }
 
@@ -110,8 +119,84 @@ export async function contarPendentes(): Promise<number> {
 export async function lerConfig(): Promise<Config> {
   const db = await abrirBanco();
   const itens = await db.getAll('config');
-  const salvo = Object.fromEntries(itens.map((i) => [i.chave, i.valor]));
+  // Chaves começando com "_" são internas (conexão, cursor de sincronização)
+  const salvo = Object.fromEntries(itens.filter((i) => !i.chave.startsWith('_')).map((i) => [i.chave, i.valor]));
   return { ...CONFIG_PADRAO, ...salvo } as Config;
+}
+
+/** Valores internos guardados na loja "config" (não aparecem em lerConfig). */
+export async function lerInterno<T>(chave: `_${string}`): Promise<T | undefined> {
+  const db = await abrirBanco();
+  return (await db.get('config', chave))?.valor as T | undefined;
+}
+
+export async function salvarInterno(chave: `_${string}`, valor: unknown) {
+  const db = await abrirBanco();
+  if (valor === undefined) await db.delete('config', chave);
+  else await db.put('config', { chave, valor });
+}
+
+/* ---------------- Fila de sincronização ---------------- */
+
+export async function listarFila(): Promise<ItemFila[]> {
+  const db = await abrirBanco();
+  return (await db.getAll('fila_sync')).sort((a, b) => a.criado_em.localeCompare(b.criado_em));
+}
+
+/**
+ * Tira da fila os itens enviados com sucesso — mas só se não mudaram enquanto eram enviados
+ * (se o registro foi editado nesse meio-tempo, a versão nova continua na fila).
+ */
+export async function confirmarEnvio(enviados: ItemFila[]) {
+  const db = await abrirBanco();
+  const tx = db.transaction('fila_sync', 'readwrite');
+  for (const item of enviados) {
+    const atual = await tx.store.get(item.id);
+    if (atual && atual.payload.atualizado_em === item.payload.atualizado_em) await tx.store.delete(item.id);
+  }
+  await tx.done;
+  avisarMudanca();
+}
+
+export async function registrarFalhas(falhas: { item: ItemFila; erro: string }[]) {
+  const db = await abrirBanco();
+  const tx = db.transaction('fila_sync', 'readwrite');
+  for (const { item, erro } of falhas) {
+    const atual = await tx.store.get(item.id);
+    if (atual) await tx.store.put({ ...atual, tentativas: atual.tentativas + 1, ultimo_erro: erro });
+  }
+  await tx.done;
+  avisarMudanca();
+}
+
+/**
+ * Aplica registros vindos do servidor (outros aparelhos), SEM colocá-los na fila.
+ * Regras: alteração local ainda não enviada tem prioridade; senão vence o atualizado_em mais novo.
+ * Retorna quantos registros mudaram.
+ */
+export async function aplicarRemotos(dados: Partial<Record<Entidade, Registro[]>>): Promise<number> {
+  const db = await abrirBanco();
+  const conhecidas: Entidade[] = ['tarefas', 'listas', 'compromissos', 'categorias', 'pessoas', 'eventos'];
+  const entidades = conhecidas.filter((e) => (dados[e] ?? []).length);
+  if (!entidades.length) return 0;
+  const lojas: (Entidade | 'fila_sync')[] = [...entidades, 'fila_sync'];
+  const tx = db.transaction(lojas, 'readwrite');
+  const pendentes = new Set((await tx.objectStore('fila_sync').getAll()).map((i) => `${i.entidade}:${i.registro_id}`));
+  let mudancas = 0;
+
+  for (const entidade of entidades) {
+    const loja = tx.objectStore(entidade);
+    for (const remoto of dados[entidade]!) {
+      if (pendentes.has(`${entidade}:${remoto.id}`)) continue;
+      const local = (await loja.get(remoto.id)) as Registro | undefined;
+      if (local && local.atualizado_em >= remoto.atualizado_em) continue;
+      await loja.put(remoto as never);
+      mudancas++;
+    }
+  }
+  await tx.done;
+  if (mudancas) avisarMudanca();
+  return mudancas;
 }
 
 export async function salvarConfig(parcial: Partial<Config>) {

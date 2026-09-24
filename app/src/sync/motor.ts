@@ -1,0 +1,264 @@
+// Motor de sincronização (RS01–RS11).
+//
+// Um ciclo = uma ou mais chamadas "sincronizar" ao backend. Cada chamada:
+//   1) envia um lote da fila local (até 50 alterações);
+//   2) recebe tudo o que o servidor recebeu depois do último cursor (de qualquer aparelho).
+import type { Entidade, ItemFila, Registro } from '../dominio/tipos';
+import {
+  aoGravarLocal,
+  aplicarRemotos,
+  confirmarEnvio,
+  lerInterno,
+  listarFila,
+  registrarFalhas,
+  salvarInterno,
+} from '../dados/repositorio';
+
+export interface Conexao {
+  url: string;
+  token: string;
+  planilha?: string;
+}
+
+export type StatusSync = 'desconectado' | 'offline' | 'sincronizando' | 'sincronizado' | 'pendente' | 'erro';
+
+export interface EstadoSync {
+  status: StatusSync;
+  pendentes: number;
+  ultimaSync: string | null;
+  erro: string | null;
+  planilha: string | null;
+}
+
+const TAMANHO_LOTE = 50;
+const INTERVALO_MS = 5 * 60_000;
+const ESPERA_ENVIO_MS = 2_500;
+const FALHAS_PARA_ERRO = 5;
+
+/* ---------------- Código de conexão ---------------- */
+
+/** "AGENDA1:<base64url de {u, t}>" → conexão. */
+export function decodificarCodigo(codigo: string): Conexao | null {
+  const limpo = codigo.trim().replace(/\s+/g, '');
+  if (!limpo.startsWith('AGENDA1:')) return null;
+  try {
+    const b64 = limpo.slice(8).replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const json = JSON.parse(new TextDecoder().decode(bytes));
+    // http://localhost só é aceito para testes com o servidor falso
+    const urlValida = typeof json.u === 'string' && (json.u.startsWith('https://') || json.u.startsWith('http://localhost:'));
+    if (!urlValida || typeof json.t !== 'string') return null;
+    return { url: json.u, token: json.t };
+  } catch {
+    return null;
+  }
+}
+
+/* ---------------- Estado observável ---------------- */
+
+let estado: EstadoSync = { status: 'desconectado', pendentes: 0, ultimaSync: null, erro: null, planilha: null };
+const ouvintes = new Set<(e: EstadoSync) => void>();
+
+export const lerEstadoSync = () => estado;
+
+export function aoMudarSync(fn: (e: EstadoSync) => void): () => void {
+  ouvintes.add(fn);
+  return () => ouvintes.delete(fn);
+}
+
+function definir(parcial: Partial<EstadoSync>) {
+  estado = { ...estado, ...parcial };
+  ouvintes.forEach((fn) => fn(estado));
+}
+
+/* ---------------- Chamada ao backend ---------------- */
+
+export class ErroApi extends Error {
+  constructor(
+    mensagem: string,
+    readonly codigo?: number,
+  ) {
+    super(mensagem);
+  }
+}
+
+interface RespostaSync {
+  ok: boolean;
+  erro?: string;
+  codigo?: number;
+  resultados?: { id: string; ok: boolean; erro?: string; ignorado?: boolean }[];
+  dados?: Partial<Record<Entidade, Registro[]>>;
+  cursor?: string;
+  planilha?: string;
+  versao?: number;
+}
+
+async function chamar(conexao: Conexao, corpo: object): Promise<RespostaSync> {
+  let resposta: Response;
+  try {
+    // text/plain evita a verificação prévia (CORS) que o Apps Script não suporta
+    resposta = await fetch(conexao.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ ...corpo, token: conexao.token }),
+      redirect: 'follow',
+    });
+  } catch {
+    throw new ErroApi('Sem conexão com o servidor');
+  }
+  if (!resposta.ok) throw new ErroApi(`Servidor respondeu ${resposta.status}`, resposta.status);
+  let json: RespostaSync;
+  try {
+    json = await resposta.json();
+  } catch {
+    throw new ErroApi('Resposta inválida do servidor (a implantação do Apps Script está como "Qualquer pessoa"?)');
+  }
+  if (!json.ok) throw new ErroApi(json.erro ?? 'Erro no servidor', json.codigo);
+  return json;
+}
+
+/* ---------------- Conectar / desconectar ---------------- */
+
+/** Testa o código de conexão e, se funcionar, guarda e dispara a primeira sincronização. */
+export async function conectar(codigo: string): Promise<void> {
+  const conexao = decodificarCodigo(codigo);
+  if (!conexao) throw new ErroApi('Código de conexão inválido. Ele começa com "AGENDA1:".');
+  const r = await chamar(conexao, { acao: 'ping' });
+  await salvarInterno('_conexao', { ...conexao, planilha: r.planilha });
+  await salvarInterno('_cursor', undefined);
+  definir({ planilha: r.planilha ?? null, erro: null });
+  await sincronizar();
+}
+
+export async function desconectar() {
+  await salvarInterno('_conexao', undefined);
+  await salvarInterno('_cursor', undefined);
+  definir({ planilha: null, erro: null });
+  await atualizarStatus();
+}
+
+/** Baixa novamente tudo da planilha (mescla com o que há no aparelho). */
+export async function baixarTudo() {
+  await salvarInterno('_cursor', undefined);
+  await sincronizar();
+}
+
+/* ---------------- Ciclo de sincronização ---------------- */
+
+let rodando: Promise<void> | null = null;
+let repetir = false;
+let falhasSeguidas = 0;
+let timerRetentativa: ReturnType<typeof setTimeout> | undefined;
+
+const semInternet = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+
+async function atualizarStatus(erro: string | null = estado.erro) {
+  const conexao = await lerInterno<Conexao>('_conexao');
+  const fila = await listarFila();
+  const travados = fila.some((i) => i.tentativas >= FALHAS_PARA_ERRO);
+  const status: StatusSync = !conexao
+    ? 'desconectado'
+    : semInternet()
+      ? 'offline'
+      : erro || travados
+        ? 'erro'
+        : fila.length
+          ? 'pendente'
+          : 'sincronizado';
+  definir({ status, pendentes: fila.length, erro, planilha: conexao?.planilha ?? null });
+}
+
+/** Executa um ciclo completo. Chamadas simultâneas são agrupadas. */
+export function sincronizar(): Promise<void> {
+  if (rodando) {
+    repetir = true;
+    return rodando;
+  }
+  rodando = (async () => {
+    try {
+      do {
+        repetir = false;
+        await ciclo();
+      } while (repetir);
+    } finally {
+      rodando = null;
+    }
+  })();
+  return rodando;
+}
+
+async function ciclo() {
+  clearTimeout(timerRetentativa);
+  const conexao = await lerInterno<Conexao>('_conexao');
+  if (!conexao || semInternet()) return atualizarStatus(null);
+
+  definir({ status: 'sincronizando' });
+  try {
+    let fila = await listarFila();
+    let voltas = 0;
+    do {
+      const lote = fila.slice(0, TAMANHO_LOTE);
+      const cursor = (await lerInterno<string>('_cursor')) ?? null;
+      const r = await chamar(conexao, {
+        acao: 'sincronizar',
+        cursor,
+        operacoes: lote.map((i) => ({ id: i.id, entidade: i.entidade, registro_id: i.registro_id, operacao: i.operacao, payload: i.payload })),
+      });
+
+      const porId = new Map(lote.map((i) => [i.id, i]));
+      const sucessos: ItemFila[] = [];
+      const falhas: { item: ItemFila; erro: string }[] = [];
+      for (const res of r.resultados ?? []) {
+        const item = porId.get(res.id);
+        if (!item) continue;
+        if (res.ok) sucessos.push(item);
+        else falhas.push({ item, erro: res.erro ?? 'erro' });
+      }
+      await confirmarEnvio(sucessos);
+      if (falhas.length) await registrarFalhas(falhas);
+      await aplicarRemotos(r.dados ?? {});
+      if (r.cursor) await salvarInterno('_cursor', r.cursor);
+
+      fila = await listarFila();
+      voltas++;
+      // Continua enquanto houver mais itens do que cabem num lote e houve progresso
+      if (!(lote.length === TAMANHO_LOTE && sucessos.length > 0)) break;
+    } while (fila.length && voltas < 50);
+
+    falhasSeguidas = 0;
+    const agora = new Date().toISOString();
+    await salvarInterno('_ultima_sync', agora);
+    definir({ ultimaSync: agora });
+    await atualizarStatus(null);
+  } catch (e) {
+    falhasSeguidas++;
+    const msg = e instanceof ErroApi && e.codigo === 401 ? 'O código de conexão não é mais válido — conecte de novo.' : e instanceof Error ? e.message : String(e);
+    await atualizarStatus(semInternet() ? null : msg);
+    // RS06 — nova tentativa com intervalo crescente (5 s, 15 s, 45 s… até 5 min)
+    const espera = Math.min(INTERVALO_MS, 5_000 * 3 ** (falhasSeguidas - 1));
+    timerRetentativa = setTimeout(() => sincronizar(), espera);
+  }
+}
+
+/* ---------------- Início automático ---------------- */
+
+let iniciado = false;
+
+/** Liga os gatilhos: ao abrir, ao voltar a internet, ao voltar ao app, após gravações e a cada 5 min. */
+export async function iniciarSincronizacao() {
+  if (iniciado) return;
+  iniciado = true;
+  definir({ ultimaSync: (await lerInterno<string>('_ultima_sync')) ?? null });
+
+  let timerEnvio: ReturnType<typeof setTimeout> | undefined;
+  aoGravarLocal(() => {
+    clearTimeout(timerEnvio);
+    timerEnvio = setTimeout(() => sincronizar(), ESPERA_ENVIO_MS);
+    void atualizarStatus();
+  });
+  window.addEventListener('online', () => sincronizar());
+  window.addEventListener('offline', () => atualizarStatus(null));
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && sincronizar());
+  setInterval(() => sincronizar(), INTERVALO_MS);
+  await sincronizar();
+}

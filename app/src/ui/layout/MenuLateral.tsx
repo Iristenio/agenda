@@ -2,6 +2,7 @@ import type { ComponentType, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { irPara, type Tela } from '../rotas';
 import { IconeCalendario, IconeConfig, IconeEquipe, IconeHoje, IconeTarefas } from '../icones';
+import { ROTULO_STATUS, useSync } from '../../sync/ganchos';
 
 const ITENS: { tela: Tela; rotulo: string; Icone: ComponentType<JSX.SVGAttributes<SVGSVGElement>> }[] = [
   { tela: 'hoje', rotulo: 'Hoje', Icone: IconeHoje },
@@ -27,6 +28,8 @@ function useOnline() {
 
 export function MenuLateral({ atual }: { atual: Tela }) {
   const online = useOnline();
+  const sync = useSync();
+  const status = !online && sync.status !== 'desconectado' ? 'offline' : sync.status;
   return (
     <nav class="menu" aria-label="Navegação principal">
       {ITENS.map(({ tela, rotulo, Icone }) => (
@@ -41,11 +44,12 @@ export function MenuLateral({ atual }: { atual: Tela }) {
         </button>
       ))}
       <div class="menu-espaco" />
-      {/* Na etapa 4 este indicador passa a mostrar o estado da sincronização (RS07) */}
-      <div class="status-sync" title={online ? 'Conectado' : 'Sem internet'}>
-        <span class={`status-ponto${online ? ' online' : ''}`} />
-        {online ? 'Online' : 'Offline'}
-      </div>
+      {/* RS07 — estado da sincronização; tocar abre os Ajustes */}
+      <button class="status-sync" onClick={() => irPara('config')} title={sync.erro ?? ROTULO_STATUS[status]}>
+        <span class={`status-ponto ${status}`} />
+        {ROTULO_STATUS[status]}
+        {status === 'pendente' && <small>{sync.pendentes}</small>}
+      </button>
     </nav>
   );
 }

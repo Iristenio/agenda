@@ -278,6 +278,11 @@ ids dos calendários Google · id da lista padrão do Google Tasks · data da ú
 - **RS08** — **Restauração:** em um dispositivo novo (ou com os dados apagados), o app baixa tudo da planilha.
 - **RS09** — O app pede ao navegador **armazenamento persistente**, para que o sistema não apague os dados locais
   (no Chrome/Android isso é concedido automaticamente quando o app está instalado na tela inicial).
+- **RS11** — **Vários aparelhos** (tablet e celular): cada ciclo também **recebe** da planilha o que outros aparelhos enviaram
+  desde o último ciclo (coluna `_recebido_em` + cursor). Alteração local ainda não enviada tem prioridade; entre versões,
+  vence o `atualizado_em` mais recente — tanto no servidor quanto no aparelho.
+- **RS12** — Conexão por **código** (`AGENDA1:…`, gerado por `configurar()` no Apps Script) colado em Ajustes. As preferências
+  continuam por aparelho.
 - **RS10** — Cada ciclo de sincronização tem duas etapas: **1) enviar** a fila local; **2) receber** as alterações
   do Google Tasks (RT01). A etapa 2 guarda um "cursor" (data da última consulta) na CONFIG.
 

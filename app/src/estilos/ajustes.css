@@ -1,0 +1,48 @@
+/* ============ Tela Ajustes ============ */
+.ajustes { display: flex; flex-direction: column; gap: 20px; max-width: 860px; }
+.ajustes .cartao h2 { font-size: 19px; margin-bottom: 14px; }
+.ajustes .linha { gap: 10px; }
+.ajustes a.botao { text-decoration: none; color: inherit; }
+.botao:disabled { opacity: 0.5; cursor: default; }
+.campo.codigo { font-family: ui-monospace, monospace; font-size: 14px; word-break: break-all; }
+
+.sync-painel { display: flex; flex-direction: column; gap: 14px; }
+.sync-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--superficie-2);
+}
+.sync-status .status-ponto { width: 14px; height: 14px; }
+.sync-status span:last-child { color: var(--texto-2); font-size: 15px; }
+.sync-status.erro { background: var(--perigo-suave); }
+
+.preferencias { display: flex; flex-direction: column; gap: 14px; }
+.preferencias > label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.preferencias .segmentado { width: 260px; }
+.preferencias select.campo { min-height: 44px; }
+
+.info-lista { list-style: none; margin: 0; padding: 0; }
+.info-lista li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+}
+.info-lista li:last-child { border-bottom: none; }
+.info-lista span { color: var(--texto-2); }
+.info-lista strong { font-weight: 600; text-align: right; }
+
+/* Status de sincronização no menu é um botão */
+button.status-sync { cursor: pointer; border-radius: 10px; }
+button.status-sync:active { background: var(--superficie-2); }

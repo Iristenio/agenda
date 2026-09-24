@@ -10,7 +10,7 @@ import { ProvedorEstado, useEstado, type Painel } from './estado';
 import { TelaHoje } from './telas/TelaHoje';
 import { TelaTarefas } from './telas/TelaTarefas';
 import { TelaCalendario } from './telas/TelaCalendario';
-import { TelaConfig } from './telas/Telas';
+import { TelaAjustes } from './telas/TelaAjustes';
 import { TelaEquipe } from './telas/TelaEquipe';
 import { FormTarefa } from './paineis/FormTarefa';
 import { FormLista } from './paineis/FormLista';
@@ -25,7 +25,7 @@ const TELA: Record<Tela, () => JSX.Element> = {
   calendario: TelaCalendario,
   tarefas: TelaTarefas,
   equipe: TelaEquipe,
-  config: TelaConfig,
+  config: TelaAjustes,
 };
 
 function tituloPainel(p: Painel): string {
