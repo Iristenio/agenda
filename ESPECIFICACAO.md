@@ -260,6 +260,9 @@ ids dos calendários Google · id da lista padrão do Google Tasks · data da ú
 - **RN36** — Alerta se mais de `limite_ausentes_equipe` pessoas estiverem de férias no mesmo dia.
 - **RN37** — Férias pessoais → calendário "Férias – Pessoais"; férias da equipe → "Férias – Equipe". Ambas como eventos de dia inteiro.
 - **RN38** — Desativar uma pessoa oculta seus aniversários futuros (e os remove do Google), mas mantém o histórico de férias.
+- **RN39** — Na contagem de ausentes (RN36), suas férias contam como uma pessoa ("Você"). Períodos do tipo "outro" não contam.
+- **RN40** — Data de nascimento sem ano é gravada como "--MM-DD"; nesse caso não se mostra idade.
+- **RN41** — Período do tipo "outro" (ex.: congresso, licença) exige um nome; a pessoa é opcional.
 
 ---
 

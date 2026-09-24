@@ -7,7 +7,7 @@ import { organizarColunas, ocorrenciasDoDia, type Ocorrencia } from '../../domin
 import { deDataISO, diferencaMinutos, hojeISO, paraHora, somarDias } from '../../dominio/datas';
 import { useAgora } from '../../dados/ganchos';
 import { useEstado } from '../estado';
-import { corDaOcorrencia, ehDeslizeHorizontal, nomeDiaCurto, useDadosPeriodo } from './comum';
+import { corDaOcorrencia, ehDeslizeHorizontal, itensDoDia, nomeDiaCurto, useDadosPeriodo } from './comum';
 
 const HORA_PX = 56;
 const MIN_PX = HORA_PX / 60;
@@ -33,7 +33,7 @@ export function VisaoGrade({ dias, aoNavegar, aoAbrirDia }: Props) {
   const { abrirPainel } = useEstado();
   const agora = useAgora();
   const hoje = hojeISO(agora);
-  const { ocorrencias, categorias, tarefasPorDia } = useDadosPeriodo(dias[0], dias[dias.length - 1]);
+  const { ocorrencias, categorias, tarefasPorDia, aniversarios, eventos, pessoas } = useDadosPeriodo(dias[0], dias[dias.length - 1]);
   const corpo = useRef<HTMLDivElement>(null);
   const [selecao, setSelecao] = useState<Selecao | null>(null);
   const gesto = useRef<{ x: number; y: number; dia: string; topo: number; timer: number; moveu: boolean; selecionando: boolean } | null>(null);
@@ -151,6 +151,11 @@ export function VisaoGrade({ dias, aoNavegar, aoAbrirDia }: Props) {
           const tarefas = tarefasPorDia.get(dia) ?? [];
           return (
             <div key={dia} class="celula-dia-inteiro">
+              {itensDoDia(dia, aniversarios, eventos, pessoas).map((i) => (
+                <button key={i.chave} class="chip-evento" style={{ '--cor': i.cor }} onClick={() => abrirPainel(i.painel)}>
+                  {i.rotulo}
+                </button>
+              ))}
               {doDia.map((o) => (
                 <button key={o.chave} class="chip-evento" style={{ '--cor': corDaOcorrencia(o, categorias) }} onClick={() => abrirOcorrencia(o)}>
                   {o.compromisso.titulo}

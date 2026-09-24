@@ -10,11 +10,14 @@ import { ProvedorEstado, useEstado, type Painel } from './estado';
 import { TelaHoje } from './telas/TelaHoje';
 import { TelaTarefas } from './telas/TelaTarefas';
 import { TelaCalendario } from './telas/TelaCalendario';
-import { TelaConfig, TelaEquipe } from './telas/Telas';
+import { TelaConfig } from './telas/Telas';
+import { TelaEquipe } from './telas/TelaEquipe';
 import { FormTarefa } from './paineis/FormTarefa';
 import { FormLista } from './paineis/FormLista';
 import { FormCompromisso } from './paineis/FormCompromisso';
 import { FormCategoria } from './paineis/FormCategoria';
+import { FormPessoa } from './paineis/FormPessoa';
+import { FormEvento } from './paineis/FormEvento';
 import { hojeISO, paraDataISO, paraHora } from '../dominio/datas';
 
 const TELA: Record<Tela, () => JSX.Element> = {
@@ -35,8 +38,10 @@ function tituloPainel(p: Painel): string {
       return p.id ? 'Compromisso' : 'Novo compromisso';
     case 'categoria':
       return p.id ? 'Editar categoria' : 'Nova categoria';
-    case 'em_breve':
-      return p.titulo;
+    case 'pessoa':
+      return p.id ? 'Pessoa' : 'Nova pessoa';
+    case 'evento':
+      return p.id ? 'Férias / período' : 'Novas férias / período';
   }
 }
 
@@ -50,13 +55,10 @@ function ConteudoPainel({ painel }: { painel: Painel }) {
       return <FormCompromisso {...painel} />;
     case 'categoria':
       return <FormCategoria id={painel.id} />;
-    case 'em_breve':
-      return (
-        <p style={{ color: 'var(--texto-2)' }}>
-          Este formulário chega na etapa {painel.etapa}. O painel abre deste lado para que o calendário continue
-          visível enquanto você preenche.
-        </p>
-      );
+    case 'pessoa':
+      return <FormPessoa id={painel.id} />;
+    case 'evento':
+      return <FormEvento id={painel.id} tipo_evento={painel.tipo_evento} pessoa_id={painel.pessoa_id} data={painel.data} />;
   }
 }
 
@@ -83,8 +85,8 @@ function Estrutura() {
       const dia = tela === 'calendario' ? dataFoco : hojeISO();
       return abrirPainel({ tipo: 'compromisso', ...inicioSugerido(dia) });
     }
-    const titulos = { ferias: 'Novas férias', pessoa: 'Nova pessoa' };
-    abrirPainel({ tipo: 'em_breve', titulo: titulos[tipo], etapa: 3 });
+    if (tipo === 'pessoa') return abrirPainel({ tipo: 'pessoa' });
+    abrirPainel({ tipo: 'evento', data: tela === 'calendario' ? dataFoco : undefined });
   }
 
   return (

@@ -2,13 +2,15 @@
 import { createContext, type ComponentChildren } from 'preact';
 import { useCallback, useContext, useMemo, useRef, useState } from 'preact/hooks';
 import { hojeISO } from '../dominio/datas';
+import type { TipoEvento } from '../dominio/tipos';
 
 export type Painel =
   | { tipo: 'tarefa'; id?: string; lista_id?: string }
   | { tipo: 'lista'; id?: string }
   | { tipo: 'compromisso'; id?: string; data?: string; inicio?: string; fim?: string; dia_inteiro?: boolean }
   | { tipo: 'categoria'; id?: string }
-  | { tipo: 'em_breve'; titulo: string; etapa: number };
+  | { tipo: 'pessoa'; id?: string }
+  | { tipo: 'evento'; id?: string; tipo_evento?: TipoEvento; pessoa_id?: string; data?: string };
 
 export interface Aviso {
   texto: string;

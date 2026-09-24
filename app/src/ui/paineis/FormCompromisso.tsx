@@ -17,7 +17,8 @@ import { useEntidade } from '../../dados/ganchos';
 import { carregarOcorrencia, ehDeSerie, excluirCompromisso, novaCategoria, salvarCategoria, salvarCompromisso } from '../acoes/compromissos';
 import { useEstado, type OpcaoDialogo } from '../estado';
 import { SeletorRecorrencia } from '../componentes/SeletorRecorrencia';
-import { IconeAlerta, IconeMais } from '../icones';
+import { IconeAlerta, IconeFerias, IconeMais } from '../icones';
+import { minhasFeriasEm } from '../../dominio/ferias';
 
 const LEMBRETES: { min: number; rotulo: string }[] = [
   { min: 0, rotulo: 'Na hora' },
@@ -41,6 +42,7 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
   const { fecharPainel, avisar, perguntar, abrirPainel } = useEstado();
   const categorias = useEntidade('categorias').filter((c) => c.ativo).sort((a, b) => a.ordem - b.ordem);
   const todos = useEntidade('compromissos');
+  const eventos = useEntidade('eventos');
   const [c, setC] = useState<Compromisso | null>(null);
   const [ocorrencia, setOcorrencia] = useState<Ocorrencia | null>(null);
   const [rec, setRec] = useState<Recorrencia | null>(null);
@@ -78,6 +80,8 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
 
   if (!c) return null;
   const mudar = (parcial: Partial<Compromisso>) => setC({ ...c, ...parcial });
+  // RN13 — compromisso durante minhas férias
+  const feriasNoPeriodo = c.fim >= c.inicio ? minhasFeriasEm(eventos, c.inicio.slice(0, 10), c.fim.slice(0, 10)) : [];
 
   async function criarCategoria() {
     const nome = (novaCat ?? '').trim();
@@ -195,6 +199,20 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
               </span>
             ))}
             {choques.length > 3 && <span>e mais {choques.length - 3}</span>}
+          </div>
+        </div>
+      )}
+
+      {feriasNoPeriodo.length > 0 && (
+        <div class="alerta" role="status">
+          <IconeFerias />
+          <div>
+            <strong>Você estará de férias</strong>
+            {feriasNoPeriodo.map((f) => (
+              <span key={f.id}>
+                {f.titulo || 'Minhas férias'}: {f.data_inicio.slice(8)}/{f.data_inicio.slice(5, 7)} a {f.data_fim.slice(8)}/{f.data_fim.slice(5, 7)}
+              </span>
+            ))}
           </div>
         </div>
       )}

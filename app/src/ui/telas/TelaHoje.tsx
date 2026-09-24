@@ -10,7 +10,8 @@ import { criarTarefaRapida } from '../acoes/tarefas';
 import { useEstado } from '../estado';
 import { ItemTarefa } from '../componentes/ItemTarefa';
 import { irPara } from '../rotas';
-import { IconeAlerta, IconeBolo, IconeCalendario, IconeMais, IconeRelogio, IconeTarefas } from '../icones';
+import { IconeCalendario, IconeMais, IconeRelogio, IconeTarefas } from '../icones';
+import { CartaoRadar } from '../componentes/CartaoRadar';
 
 const formatarDataLonga = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -26,14 +27,7 @@ export function TelaHoje() {
         <div class="colunas">
           <CartaoAgenda agora={agora} />
           <CartaoTarefas agora={agora} />
-          <section class="cartao">
-            <h2><IconeAlerta /> Radar</h2>
-            <div class="vazio">
-              <IconeBolo />
-              <strong>Sem novidades</strong>
-              Aniversários, férias e alertas aparecem aqui.
-            </div>
-          </section>
+          <CartaoRadar agora={agora} />
         </div>
       </div>
     </>

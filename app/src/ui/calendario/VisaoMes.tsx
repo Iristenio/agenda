@@ -1,10 +1,10 @@
 // Visão Mês: 6 semanas; tocar num dia abre a visão Dia; deslizar muda o mês.
 import { useRef } from 'preact/hooks';
-import { ocorrenciasDoDia, type Ocorrencia } from '../../dominio/compromissos';
+import { ocorrenciasDoDia } from '../../dominio/compromissos';
 import { deDataISO, hojeISO, inicioDaSemana, inicioDoMes, somarDias } from '../../dominio/datas';
 import { useAgora, useConfig } from '../../dados/ganchos';
-import { useEstado } from '../estado';
-import { corDaOcorrencia, ehDeslizeHorizontal, nomeDiaCurto, useDadosPeriodo } from './comum';
+import { useEstado, type Painel } from '../estado';
+import { corDaOcorrencia, ehDeslizeHorizontal, itensDoDia, nomeDiaCurto, useDadosPeriodo } from './comum';
 
 const MAX_ITENS = 3;
 
@@ -14,6 +14,15 @@ interface Props {
   aoAbrirDia: (dia: string) => void;
 }
 
+interface ItemMes {
+  chave: string;
+  hora?: string;
+  rotulo: string;
+  cor?: string;
+  classe: string;
+  painel: Painel;
+}
+
 export function VisaoMes({ dataFoco, aoNavegar, aoAbrirDia }: Props) {
   const { abrirPainel } = useEstado();
   const config = useConfig();
@@ -21,14 +30,31 @@ export function VisaoMes({ dataFoco, aoNavegar, aoAbrirDia }: Props) {
   const mes = dataFoco.slice(0, 7);
   const primeiro = inicioDaSemana(inicioDoMes(dataFoco), config.primeiro_dia_semana);
   const dias = Array.from({ length: 42 }, (_, i) => somarDias(primeiro, i));
-  const { ocorrencias, categorias, tarefasPorDia } = useDadosPeriodo(dias[0], dias[41]);
+  const { ocorrencias, categorias, tarefasPorDia, aniversarios, eventos, pessoas } = useDadosPeriodo(dias[0], dias[41]);
   const toque = useRef<{ x: number; y: number } | null>(null);
   const deslizou = useRef(false); // evita que o deslize também "toque" no dia
 
-  const abrirOcorrencia = (e: Event, o: Ocorrencia) => {
-    e.stopPropagation();
-    abrirPainel({ tipo: 'compromisso', id: o.compromisso.id, data: o.data_original ?? undefined });
-  };
+  function itensDe(dia: string): ItemMes[] {
+    const itens: ItemMes[] = itensDoDia(dia, aniversarios, eventos, pessoas).map((i) => ({ ...i, classe: 'inteiro' }));
+    const doDia = ocorrenciasDoDia(ocorrencias, dia).sort(
+      (a, b) => Number(b.compromisso.dia_inteiro) - Number(a.compromisso.dia_inteiro) || a.inicio.localeCompare(b.inicio),
+    );
+    for (const o of doDia) {
+      itens.push({
+        chave: o.chave,
+        hora: !o.compromisso.dia_inteiro && o.inicio.slice(0, 10) === dia ? o.inicio.slice(11, 16) : undefined,
+        rotulo: o.compromisso.titulo,
+        cor: corDaOcorrencia(o, categorias),
+        classe: o.compromisso.dia_inteiro ? 'inteiro' : '',
+        painel: { tipo: 'compromisso', id: o.compromisso.id, data: o.data_original ?? undefined },
+      });
+    }
+    for (const t of tarefasPorDia.get(dia) ?? []) {
+      if (t.status === 'concluida') continue;
+      itens.push({ chave: t.id, rotulo: `○ ${t.titulo}`, classe: 'tarefa-marcador', painel: { tipo: 'tarefa', id: t.id } });
+    }
+    return itens;
+  }
 
   return (
     <div
@@ -51,14 +77,8 @@ export function VisaoMes({ dataFoco, aoNavegar, aoAbrirDia }: Props) {
       </div>
       <div class="mes-grade">
         {dias.map((dia) => {
-          const doDia = ocorrenciasDoDia(ocorrencias, dia).sort(
-            (a, b) => Number(b.compromisso.dia_inteiro) - Number(a.compromisso.dia_inteiro) || a.inicio.localeCompare(b.inicio),
-          );
-          const tarefas = (tarefasPorDia.get(dia) ?? []).filter((t) => t.status !== 'concluida');
-          const total = doDia.length + tarefas.length;
-          const visiveis = doDia.slice(0, total > MAX_ITENS ? MAX_ITENS - 1 : MAX_ITENS);
-          const vagas = Math.max(0, (total > MAX_ITENS ? MAX_ITENS - 1 : MAX_ITENS) - visiveis.length);
-          const restantes = total - visiveis.length - Math.min(vagas, tarefas.length);
+          const itens = itensDe(dia);
+          const limite = itens.length > MAX_ITENS ? MAX_ITENS - 1 : MAX_ITENS;
           return (
             <div
               key={dia}
@@ -68,30 +88,21 @@ export function VisaoMes({ dataFoco, aoNavegar, aoAbrirDia }: Props) {
               tabIndex={0}
             >
               <span class="mes-numero">{deDataISO(dia).getDate()}</span>
-              {visiveis.map((o) => (
+              {itens.slice(0, limite).map((i) => (
                 <button
-                  key={o.chave}
-                  class={`mes-item${o.compromisso.dia_inteiro ? ' inteiro' : ''}`}
-                  style={{ '--cor': corDaOcorrencia(o, categorias) }}
-                  onClick={(e) => abrirOcorrencia(e, o)}
-                >
-                  {!o.compromisso.dia_inteiro && o.inicio.slice(0, 10) === dia && <b>{o.inicio.slice(11, 16)}</b>}
-                  {o.compromisso.titulo}
-                </button>
-              ))}
-              {tarefas.slice(0, vagas).map((t) => (
-                <button
-                  key={t.id}
-                  class="mes-item tarefa-marcador"
+                  key={i.chave}
+                  class={`mes-item ${i.classe}`}
+                  style={i.cor ? { '--cor': i.cor } : undefined}
                   onClick={(e) => {
                     e.stopPropagation();
-                    abrirPainel({ tipo: 'tarefa', id: t.id });
+                    abrirPainel(i.painel);
                   }}
                 >
-                  ○ {t.titulo}
+                  {i.hora && <b>{i.hora}</b>}
+                  {i.rotulo}
                 </button>
               ))}
-              {restantes > 0 && <span class="mes-mais">+{restantes} mais</span>}
+              {itens.length > limite && <span class="mes-mais">+{itens.length - limite} mais</span>}
             </div>
           );
         })}

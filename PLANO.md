@@ -130,15 +130,16 @@ Tarefas:
 **Objetivo:** equipe, aniversários, férias e a tela inicial completa.
 
 Tarefas:
-- [ ] Cadastro de pessoas (equipe e contatos), ativar/desativar (RN38).
-- [ ] Aniversários gerados automaticamente, com idade e regra do 29/02 (RN30–RN32).
-- [ ] Férias pessoais e da equipe; contagem de dias corridos/úteis (RN34).
-- [ ] Alertas de sobreposição e de limite de ausentes (RN35, RN36).
-- [ ] Alerta de compromisso durante suas férias (RN13).
-- [ ] Tela **Equipe**: linha do tempo de férias (estilo Gantt, por mês) + próximos aniversários.
-- [ ] Tela **Hoje** em três colunas: agenda do dia · tarefas · radar (aniversários, ausências, alertas).
-- [ ] Aniversários e férias também exibidos no calendário.
-- [ ] Testes de `aniversarios.ts` e `ferias.ts`.
+- [x] Cadastro de pessoas (equipe e contatos), ativar/desativar (RN38).
+- [x] Aniversários gerados automaticamente, com idade e regra do 29/02 (RN30–RN32).
+- [x] Férias pessoais e da equipe (e "outros períodos"); contagem de dias corridos/úteis (RN34).
+- [x] Alertas de sobreposição e de limite de ausentes (RN35, RN36) — limite ajustável na tela Equipe.
+- [x] Alerta de compromisso durante suas férias (RN13).
+- [x] Tela **Equipe**: linha do tempo de férias (estilo Gantt, por mês; tocar num dia marca férias) + próximos aniversários.
+- [x] Tela **Hoje** em três colunas: agenda do dia · tarefas · radar (alertas, aniversários, de férias hoje, próximas saídas).
+- [x] Aniversários e férias também exibidos no calendário (dia, semana e mês).
+- [x] Testes de `pessoas.ts` e `ferias.ts` (69 testes no total).
+- [x] Conferido também na largura de celular (375 px).
 
 **✅ Pronto quando:** o app está completo como agenda offline — ao abrir, a tela Hoje mostra tudo o que importa no dia.
 
