@@ -90,6 +90,34 @@ export const IconeFerias = (p: Props) => (
   </Base>
 );
 
+export const IconeRepetir = (p: Props) => (
+  <Base {...p}>
+    <path d="M17 2l3 3-3 3" />
+    <path d="M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3" />
+    <path d="M20 13v2a4 4 0 0 1-4 4H4" />
+  </Base>
+);
+
+export const IconeArrastar = (p: Props) => (
+  <Base {...p}>
+    <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" stroke-width={3} />
+  </Base>
+);
+
+export const IconeLapis = (p: Props) => (
+  <Base {...p}>
+    <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" />
+    <path d="M13.5 6.5l4 4" />
+  </Base>
+);
+
+export const IconeLista = (p: Props) => (
+  <Base {...p}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width={3} />
+  </Base>
+);
+
 export const IconeAlerta = (p: Props) => (
   <Base {...p}>
     <path d="M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />

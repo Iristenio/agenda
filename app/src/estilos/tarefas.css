@@ -1,0 +1,204 @@
+/* ============ Tela de tarefas ============ */
+.tarefas-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  min-height: 0;
+}
+
+/* ---- Coluna de listas ---- */
+.listas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 12px 110px 20px;
+  overflow-y: auto;
+}
+.lista-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 12px;
+  text-align: left;
+  font-weight: 550;
+}
+.lista-item svg { width: 20px; height: 20px; color: var(--texto-2); }
+.lista-item .bolinha { margin: 0 4px; }
+.lista-item[aria-current='true'] { background: var(--primaria-suave); color: var(--primaria); }
+.lista-item[aria-current='true'] svg { color: var(--primaria); }
+.lista-nome { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista-item.nova { color: var(--primaria); margin-top: 6px; }
+.lista-item.nova svg { color: var(--primaria); }
+
+.contagem {
+  min-width: 26px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--superficie-2);
+  color: var(--texto-2);
+  font-size: 13px;
+  font-weight: 650;
+  text-align: center;
+}
+
+/* ---- Coluna principal ---- */
+.tarefas-principal {
+  overflow-y: auto;
+  padding: 4px 28px 120px 12px;
+}
+.tarefas-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-bottom: 8px;
+}
+.tarefas-topo h2 { display: flex; align-items: center; gap: 12px; font-size: 22px; }
+
+.adicionar-rapido {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 14px;
+  margin-bottom: 18px;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+}
+.adicionar-rapido svg { width: 22px; height: 22px; color: var(--primaria); flex: none; }
+.adicionar-rapido .campo { background: transparent; border: none; min-height: 54px; }
+.adicionar-rapido.compacto { margin-bottom: 10px; border-radius: 12px; }
+.adicionar-rapido.compacto .campo { min-height: 46px; }
+
+/* ---- Grupos ---- */
+.grupo { margin-bottom: 18px; }
+.grupo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto-2);
+  cursor: default;
+}
+.grupo-titulo:not(:disabled) { cursor: pointer; }
+.grupo-atrasadas .grupo-titulo { color: var(--perigo); }
+.grupo-hoje .grupo-titulo { color: var(--primaria); }
+.seta { font-size: 14px; }
+
+/* ---- Linha de tarefa ---- */
+.tarefa-envoltorio {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.tarefa-fundo-excluir {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 24px;
+  background: var(--perigo-suave);
+  color: var(--perigo);
+  font-weight: 700;
+}
+.tarefa-envoltorio.armado .tarefa-fundo-excluir { background: var(--perigo); color: #fff; }
+
+.tarefa {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 8px 8px 8px 14px;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  touch-action: pan-y;
+  cursor: pointer;
+  transition: transform 0.18s ease-out;
+}
+.tarefa.compacto { min-height: 56px; border: none; background: var(--superficie-2); }
+
+.check {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.check svg {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid var(--cor-prioridade, var(--texto-2));
+  fill: none;
+  stroke: transparent;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: background 0.15s;
+}
+.tarefa.prioridade-alta { --cor-prioridade: var(--perigo); }
+.tarefa.prioridade-media { --cor-prioridade: var(--aviso); }
+.tarefa.prioridade-baixa { --cor-prioridade: var(--primaria); }
+.tarefa.concluida .check svg { background: var(--sucesso); border-color: var(--sucesso); stroke: #fff; }
+
+.tarefa-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.tarefa-titulo { font-weight: 550; overflow-wrap: anywhere; }
+.tarefa.concluida .tarefa-titulo { text-decoration: line-through; color: var(--texto-2); }
+.tarefa-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; font-size: 14px; color: var(--texto-2); }
+.tarefa-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
+.meta-icone { width: 16px; height: 16px; }
+
+.etiqueta { display: inline-flex; align-items: center; gap: 6px; font-weight: 550; }
+.etiqueta::first-letter { text-transform: uppercase; }
+.etiqueta.atrasada { color: var(--perigo); }
+.etiqueta.andamento { color: var(--primaria); }
+.etiqueta.lista i { width: 8px; height: 8px; border-radius: 50%; }
+
+.alca {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 48px;
+  color: var(--texto-2);
+  opacity: 0.6;
+  touch-action: none;
+  cursor: grab;
+}
+.alca svg { width: 22px; height: 22px; }
+
+.arrastando { position: relative; z-index: 3; }
+.arrastando .tarefa { box-shadow: var(--sombra); border-color: var(--primaria); transition: none; }
+
+/* ---- Cartão de tarefas na tela Hoje ---- */
+.cartao h2 .contagem { margin-left: auto; }
+.lista-compacta { display: flex; flex-direction: column; }
+
+/* ---- Aviso de ação (Desfazer) ---- */
+.aviso-acao { bottom: 110px; }
+
+/* ============ Retrato ============ */
+@media (max-width: 899px) {
+  .tarefas-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .listas {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0 20px 10px;
+    gap: 8px;
+  }
+  .lista-item { flex: none; min-height: 44px; border: 1px solid var(--borda); border-radius: 999px; }
+  .lista-item.nova { margin-top: 0; }
+  .tarefas-principal { padding: 4px 20px 120px; }
+}

@@ -156,12 +156,14 @@ Cada entidade é um *object store* no IndexedDB e uma aba na planilha.
 | descricao | texto | | |
 | lista_id | uuid | ✔ | → LISTAS (padrão: "Geral") |
 | prioridade | enum | ✔ | alta · media · baixa (padrão: media) |
-| prazo | data (+hora opcional) | | |
-| rrule | texto | | Recorrência da tarefa |
+| prazo | data | | AAAA-MM-DD |
+| prazo_hora | hora | | HH:mm (opcional; o Google Tasks não guarda hora) |
+| rrule | texto | | Recorrência da tarefa (DTSTART + RRULE) |
 | status | enum | ✔ | pendente · andamento · concluida · excluida |
 | concluida_em | data-hora | | |
 | ordem | número | ✔ | Ordenação manual |
 | tarefa_origem_id | uuid | | Tarefa recorrente que gerou esta |
+| proxima_gerada_id | uuid | | Próxima ocorrência já criada (evita duplicar ao reabrir e concluir de novo) |
 | sync_google | bool | ✔ | Padrão: sim |
 | google_task_id | texto | | |
 | criado_em / atualizado_em | data-hora | ✔ | |
@@ -239,7 +241,10 @@ ids dos calendários Google · id da lista padrão do Google Tasks · data da ú
 - **RN23** — Concluir uma tarefa recorrente **gera a próxima** automaticamente, com o prazo calculado pela `rrule` a partir do prazo anterior (não da data de conclusão).
 - **RN24** — Ordenação padrão: atrasadas → prioridade → prazo → ordem manual. É possível arrastar para reordenar dentro da mesma prioridade.
 - **RN25** — Tarefas com prazo aparecem no calendário como marcadores do dia, sem ocupar horário.
-- **RN26** — Reabrir uma tarefa concluída limpa `concluida_em` e **não** apaga a próxima ocorrência já gerada.
+- **RN26** — Reabrir uma tarefa concluída limpa `concluida_em` e **não** apaga a próxima ocorrência já gerada. Concluir de novo não gera outra.
+  (Já o botão "Desfazer", logo após concluir, desfaz tudo — inclusive a próxima ocorrência.)
+- **RN27** — A lista "Geral" é fixa e não pode ser excluída. Excluir outra lista move suas tarefas para "Geral". Nomes de lista não se repetem.
+- **RN28** — Tarefa recorrente exige prazo; ao escolher uma repetição sem prazo, o prazo passa a ser hoje.
 
 ### 4.4 Eventos, aniversários e férias
 - **RN30** — Cada pessoa com `data_nascimento` gera um aniversário anual, exibido no calendário e replicado como evento anual no calendário "Aniversários".

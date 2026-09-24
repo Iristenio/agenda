@@ -91,15 +91,16 @@ Tarefas:
 **Objetivo:** primeiro módulo completo e útil no dia a dia.
 
 Tarefas:
-- [ ] Banco local (IndexedDB) com todas as entidades da especificação §3.
-- [ ] Repositórios com exclusão lógica (RN01), carimbo de datas (RN02) e "Desfazer" (RN05).
-- [ ] Registro das alterações na FILA_SYNC (ainda sem envio — só acumula).
-- [ ] Pedido de armazenamento persistente (RS09).
-- [ ] Listas de tarefas (criar, renomear, cor, ordem); lista "Geral" padrão.
-- [ ] Tarefas: criar/editar no painel lateral, prioridade, prazo, concluir com um toque, excluir deslizando.
-- [ ] Atrasadas em destaque (RN21), concluídas por 7 dias (RN22), ordenação (RN24), arrastar para reordenar.
-- [ ] Tarefas recorrentes: seletor de recorrência + geração da próxima (RN23, RN26).
-- [ ] Testes automáticos de `tarefas.ts` e `recorrencia.ts`.
+- [x] Banco local (IndexedDB) com todas as entidades da especificação §3.
+- [x] Repositórios com exclusão lógica (RN01), carimbo de datas (RN02) e "Desfazer" (RN05).
+- [x] Registro das alterações na FILA_SYNC (ainda sem envio — só acumula).
+- [x] Pedido de armazenamento persistente (RS09).
+- [x] Listas de tarefas (criar, renomear, cor, ordem); lista "Geral" padrão.
+- [x] Tarefas: criar/editar no painel lateral, prioridade, prazo, concluir com um toque, excluir deslizando.
+- [x] Atrasadas em destaque (RN21), concluídas por 7 dias (RN22), ordenação (RN24), arrastar para reordenar.
+- [x] Tarefas recorrentes: seletor de recorrência + geração da próxima (RN23, RN26).
+- [x] Testes automáticos de `tarefas.ts`, `recorrencia.ts` e do repositório local (32 testes).
+- [x] Extra: cartão de tarefas do dia na tela Hoje, com adição rápida.
 
 **✅ Pronto quando:** você consegue usar o app como sua lista de tarefas por alguns dias, offline, sem perder nada ao fechar/reabrir.
 
