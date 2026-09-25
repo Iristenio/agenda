@@ -18,6 +18,7 @@ import { useAgendasExternas, useEntidade, useExternos } from '../../dados/gancho
 import { carregarOcorrencia, ehDeSerie, excluirCompromisso, novaCategoria, salvarCategoria, salvarCompromisso } from '../acoes/compromissos';
 import { useEstado, type OpcaoDialogo } from '../estado';
 import { SeletorRecorrencia } from '../componentes/SeletorRecorrencia';
+import { CampoHora } from '../componentes/CampoHora';
 import { IconeAlerta, IconeFerias, IconeMais } from '../icones';
 import { minhasFeriasEm } from '../../dominio/ferias';
 
@@ -181,7 +182,7 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
           <span class="rotulo-linha">Início</span>
           <input type="date" class="campo" value={dataIni} onInput={(e) => e.currentTarget.value && mudarInicio(e.currentTarget.value, fmtHora(c.inicio))} />
           {!c.dia_inteiro && (
-            <input type="time" class="campo" value={fmtHora(c.inicio)} onInput={(e) => e.currentTarget.value && mudarInicio(dataIni, e.currentTarget.value)} />
+            <CampoHora valor={fmtHora(c.inicio)} aoMudar={(h) => h && mudarInicio(dataIni, h)} rotulo="Hora de início" />
           )}
         </div>
         <div class="linha">
@@ -194,7 +195,7 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
             onInput={(e) => e.currentTarget.value && mudar({ fim: `${e.currentTarget.value}T${fmtHora(c.fim)}` })}
           />
           {!c.dia_inteiro && (
-            <input type="time" class="campo" value={fmtHora(c.fim)} onInput={(e) => e.currentTarget.value && mudar({ fim: `${dataFim}T${e.currentTarget.value}` })} />
+            <CampoHora valor={fmtHora(c.fim)} aoMudar={(h) => h && mudar({ fim: `${dataFim}T${h}` })} rotulo="Hora de término" />
           )}
         </div>
       </fieldset>

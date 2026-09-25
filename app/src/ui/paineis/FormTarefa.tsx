@@ -9,6 +9,7 @@ import { useEntidade } from '../../dados/ganchos';
 import { alternarConclusao, excluirTarefa, salvarTarefa } from '../acoes/tarefas';
 import { useEstado } from '../estado';
 import { SeletorRecorrencia } from '../componentes/SeletorRecorrencia';
+import { CampoHora } from '../componentes/CampoHora';
 
 const PRIORIDADES: { valor: Prioridade; rotulo: string }[] = [
   { valor: 'alta', rotulo: 'Alta' },
@@ -123,7 +124,7 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
         <div class="linha">
           <input type="date" class="campo" value={t.prazo ?? ''} onInput={(e) => mudar({ prazo: e.currentTarget.value || null })} />
           {t.prazo && (
-            <input type="time" class="campo" value={t.prazo_hora ?? ''} onInput={(e) => mudar({ prazo_hora: e.currentTarget.value || null })} aria-label="Hora (opcional)" />
+            <CampoHora valor={t.prazo_hora} aoMudar={(h) => mudar({ prazo_hora: h })} rotulo="Hora do prazo (opcional)" opcional placeholder="Sem hora" />
           )}
         </div>
       </fieldset>
