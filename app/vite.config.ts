@@ -8,7 +8,10 @@ const BASE = process.env.BASE_PATH ?? '/agenda/';
 export default defineConfig({
   base: BASE,
   define: {
-    __VERSAO__: JSON.stringify(`${process.env.npm_package_version} · ${new Date().toISOString().slice(0, 16).replace('T', ' ')}`),
+    // Data e hora do build no horário de Brasília (formato sueco = AAAA-MM-DD HH:mm)
+    __VERSAO__: JSON.stringify(
+      `${process.env.npm_package_version} · ${new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).slice(0, 16)}`,
+    ),
   },
   plugins: [
     preact(),

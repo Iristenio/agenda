@@ -18,6 +18,7 @@ import {
 } from '../../sync/motor';
 import { descreverUltimaSync, ROTULO_STATUS, useSync } from '../../sync/ganchos';
 import { useEstado } from '../estado';
+import { procurarAtualizacao } from '../layout/AvisoAtualizacao';
 
 export function TelaAjustes() {
   return (
@@ -431,7 +432,18 @@ function Numero(props: { rotulo: string; sufixo: string; valor: number; opcoes: 
 /* ---------------- Este aparelho ---------------- */
 
 function CartaoAparelho() {
+  const { avisar } = useEstado();
+  const [procurando, setProcurando] = useState(false);
   const [persistente, setPersistente] = useState<boolean | null>(null);
+
+  async function aoProcurarAtualizacao() {
+    setProcurando(true);
+    const r = await procurarAtualizacao();
+    setProcurando(false);
+    if (r === 'em_dia') avisar({ texto: 'Você já está na versão mais recente' });
+    if (r === 'indisponivel') avisar({ texto: 'Não foi possível verificar agora (sem internet?)' });
+    // 'atualizando': o app recarrega sozinho com a versão nova
+  }
   const [uso, setUso] = useState<string>('');
 
   useEffect(() => {
@@ -463,6 +475,15 @@ function CartaoAparelho() {
           <strong>{__VERSAO__}</strong>
         </li>
       </ul>
+      <div class="linha" style={{ marginTop: 12 }}>
+        <button class="botao" disabled={procurando} onClick={aoProcurarAtualizacao}>
+          {procurando ? 'Procurando…' : 'Procurar atualização'}
+        </button>
+      </div>
+      <p class="dica">
+        O app se atualiza sozinho: quando há versão nova aparece o aviso "Atualizar" — e, se você fechar o app sem tocar
+        nele, a versão nova entra na próxima abertura.
+      </p>
     </section>
   );
 }
