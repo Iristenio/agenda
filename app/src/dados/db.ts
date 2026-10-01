@@ -1,6 +1,6 @@
 // Banco local (IndexedDB) — a FONTE DA VERDADE do app (RN04).
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Categoria, Compromisso, Evento, Externo, ItemFila, Lista, Pessoa, Tarefa } from '../dominio/tipos';
+import type { Categoria, Compromisso, Evento, Externo, Feriado, ItemFila, Lista, Pessoa, Tarefa } from '../dominio/tipos';
 
 export interface AgendaDB extends DBSchema {
   tarefas: { key: string; value: Tarefa; indexes: { lista_id: string } };
@@ -12,10 +12,11 @@ export interface AgendaDB extends DBSchema {
   fila_sync: { key: string; value: ItemFila; indexes: { registro_id: string } };
   config: { key: string; value: { chave: string; valor: unknown } };
   externos: { key: string; value: Externo };
+  feriados: { key: string; value: Feriado };
 }
 
 export const NOME_BANCO = 'agenda';
-const VERSAO = 2;
+const VERSAO = 3;
 
 let conexao: Promise<IDBPDatabase<AgendaDB>> | null = null;
 
@@ -35,6 +36,9 @@ export function abrirBanco(): Promise<IDBPDatabase<AgendaDB>> {
       if (versaoAntiga < 2) {
         // Eventos do Google criados fora do app (substituídos a cada busca)
         db.createObjectStore('externos', { keyPath: 'id' });
+      }
+      if (versaoAntiga < 3) {
+        db.createObjectStore('feriados', { keyPath: 'id' });
       }
     },
   });

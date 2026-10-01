@@ -1,7 +1,8 @@
 // Regras de negócio das tarefas (RN20–RN27).
 import type { Id, Prioridade, Tarefa } from './tipos';
 import { diferencaDias, hojeISO, paraHora } from './datas';
-import { proximaData } from './recorrencia';
+import { deRRule, ehDiaUtilDoMes, proximaData } from './recorrencia';
+import { diaUtilDoMes, type MapaFeriados } from './feriados';
 
 export const PESO_PRIORIDADE: Record<Prioridade, number> = { alta: 0, media: 1, baixa: 2 };
 
@@ -116,6 +117,25 @@ export function agruparTarefas(lista: Tarefa[], agora = new Date()): { grupo: Gr
 
 /* ---------------- Conclusão e recorrência ---------------- */
 
+/**
+ * Próximo prazo de uma tarefa recorrente. Nos modos "primeiro/último dia útil" do mês, o dia é
+ * recalculado considerando os feriados (RN44) — a regra RRULE só conhece segunda a sexta.
+ */
+export function proximoPrazo(rrule: string, prazo: string, feriados: MapaFeriados = new Map()): string | null {
+  const rec = deRRule(rrule);
+  if (!ehDiaUtilDoMes(rec)) return proximaData(rrule, prazo);
+  const modo = rec.mensal_modo as 'primeiro_util' | 'ultimo_util';
+  let base = prazo;
+  for (let i = 0; i < 4; i++) {
+    const candidata = proximaData(rrule, base);
+    if (!candidata) return null;
+    const ajustada = diaUtilDoMes(candidata, modo, feriados);
+    if (ajustada > prazo) return ajustada;
+    base = candidata; // o dia ajustado desse mês já passou: tenta o mês seguinte
+  }
+  return null;
+}
+
 export interface ResultadoConclusao {
   concluida: Tarefa;
   proxima: Tarefa | null;
@@ -125,12 +145,12 @@ export interface ResultadoConclusao {
  * RN22/RN23 — conclui a tarefa. Se for recorrente e ainda não tiver gerado a próxima,
  * cria a próxima ocorrência com prazo calculado a partir do prazo anterior.
  */
-export function concluirTarefa(t: Tarefa, novoId: () => Id, agora = new Date()): ResultadoConclusao {
+export function concluirTarefa(t: Tarefa, novoId: () => Id, agora = new Date(), feriados: MapaFeriados = new Map()): ResultadoConclusao {
   const carimbo = agora.toISOString();
   let proxima: Tarefa | null = null;
 
   if (t.rrule && t.prazo && !t.proxima_gerada_id) {
-    const data = proximaData(t.rrule, t.prazo);
+    const data = proximoPrazo(t.rrule, t.prazo, feriados);
     if (data) {
       proxima = {
         ...t,

@@ -2,7 +2,11 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { AgendaGoogle, Config } from '../../dominio/tipos';
 import { salvarConfig } from '../../dados/repositorio';
-import { useAgendasExternas, useConfig } from '../../dados/ganchos';
+import { useAgendasExternas, useConfig, useEntidade, useFeriados } from '../../dados/ganchos';
+import { agendaContaFeriado } from '../../dados/feriados';
+import { feriadosNoPeriodo } from '../../dominio/feriados';
+import { deDataISO, hojeISO, somarDias } from '../../dominio/datas';
+import { desmarcarNaoFolga } from '../acoes/feriados';
 import {
   baixarTudo,
   conectar,
@@ -24,6 +28,7 @@ export function TelaAjustes() {
       <div class="conteudo ajustes">
         <CartaoGoogle />
         <CartaoAgendasExternas />
+        <CartaoFeriados />
         <CartaoPreferencias />
         <CartaoAparelho />
       </div>
@@ -171,6 +176,14 @@ function CartaoAgendasExternas() {
   const { avisar } = useEstado();
   const [disponiveis, setDisponiveis] = useState<AgendaGoogle[] | null>(null);
   const [marcadas, setMarcadas] = useState<Set<string>>(new Set());
+  const [comoFeriado, setComoFeriado] = useState<Set<string>>(new Set());
+  const alternarFeriado = (id: string) =>
+    setComoFeriado((atual) => {
+      const nova = new Set(atual);
+      if (nova.has(id)) nova.delete(id);
+      else nova.add(id);
+      return nova;
+    });
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState('');
   const conectado = sync.status !== 'desconectado';
@@ -182,6 +195,9 @@ function CartaoAgendasExternas() {
       const lista = await listarAgendasGoogle();
       setDisponiveis(lista);
       setMarcadas(new Set(escolhidas.map((a) => a.id)));
+      // "Conta como feriado": a escolha salva; para agendas novas, as de feriados do Google já vêm marcadas
+      const salvas = new Map(escolhidas.map((a) => [a.id, a]));
+      setComoFeriado(new Set(lista.filter((a) => agendaContaFeriado(salvas.get(a.id) ?? a)).map((a) => a.id)));
     } catch (e) {
       setErro(e instanceof ErroApi ? e.message : 'Não foi possível listar as agendas.');
     } finally {
@@ -191,7 +207,9 @@ function CartaoAgendasExternas() {
 
   async function salvarEscolha() {
     setOcupado(true);
-    await definirAgendasExternas((disponiveis ?? []).filter((a) => marcadas.has(a.id)));
+    await definirAgendasExternas(
+      (disponiveis ?? []).filter((a) => marcadas.has(a.id)).map((a) => ({ ...a, feriados: comoFeriado.has(a.id) })),
+    );
     setOcupado(false);
     setDisponiveis(null);
     avisar({ texto: 'Agendas atualizadas' });
@@ -226,6 +244,7 @@ function CartaoAgendasExternas() {
                 <li key={a.id}>
                   <i class="bolinha" style={{ background: a.cor }} /> {a.nome}
                   {a.principal && <small> · principal</small>}
+                  {agendaContaFeriado(a) && <small> · conta como feriado 🎉</small>}
                 </li>
               ))}
             </ul>
@@ -257,9 +276,23 @@ function CartaoAgendasExternas() {
                   {ACESSO[a.acesso] ?? a.acesso}
                 </small>
               </span>
+              {marcadas.has(a.id) && (
+                <button
+                  type="button"
+                  class="chip"
+                  aria-pressed={comoFeriado.has(a.id)}
+                  onClick={(ev) => {
+                    ev.preventDefault();
+                    alternarFeriado(a.id);
+                  }}
+                >
+                  🎉 Feriados
+                </button>
+              )}
             </label>
           ))}
           <p class="dica">
+            <strong>🎉 Feriados</strong>: os eventos de dia inteiro dessa agenda contam como feriado (não são dia útil).
             Na agenda principal, os eventos criados pelo próprio app não aparecem duplicados. As agendas "Aniversários" e
             "Férias" do app não entram na lista — já estão no app.
           </p>
@@ -273,6 +306,78 @@ function CartaoAgendasExternas() {
           </div>
         </div>
       )}
+    </section>
+  );
+}
+
+/* ---------------- Feriados ---------------- */
+
+const fmtFeriado = new Intl.DateTimeFormat('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' });
+
+function CartaoFeriados() {
+  const { abrirPainel, avisar } = useEstado();
+  const cadastrados = useEntidade('feriados');
+  const hoje = hojeISO();
+  const mapa = useFeriados(hoje, somarDias(hoje, 365));
+  const proximos = feriadosNoPeriodo(mapa, hoje, somarDias(hoje, 365));
+  const naoContam = cadastrados.filter((f) => f.status === 'ativo' && f.tipo === 'nao_folga').sort((a, b) => a.nome.localeCompare(b.nome));
+  const [todos, setTodos] = useState(false);
+  const visiveis = todos ? proximos : proximos.slice(0, 6);
+
+  return (
+    <section class="cartao">
+      <h2>Feriados</h2>
+      <p class="dica">
+        Feriados não contam como dia útil: as tarefas de "primeiro/último dia útil" pulam esses dias e as férias os
+        descontam. Vêm das agendas marcadas com 🎉 acima e dos que você cadastrar aqui.
+      </p>
+
+      {proximos.length === 0 ? (
+        <p class="dica">Nenhum feriado nos próximos 12 meses. Marque uma agenda de feriados acima ou cadastre.</p>
+      ) : (
+        <ul class="feriados-lista">
+          {visiveis.map((f) => (
+            <li key={f.data}>
+              <button class="feriado-linha" onClick={() => abrirPainel({ tipo: 'feriado', data: f.data })}>
+                <span class="feriado-data">{fmtFeriado.format(deDataISO(f.data)).replace(/\./g, '')}</span>
+                <strong>{f.nome}</strong>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {proximos.length > 6 && (
+        <button class="link esquerda" onClick={() => setTodos(!todos)}>
+          {todos ? 'Mostrar menos' : `Ver todos (${proximos.length})`}
+        </button>
+      )}
+
+      {naoContam.length > 0 && (
+        <>
+          <h3 class="sub-titulo">Não contam como folga</h3>
+          <div class="chips">
+            {naoContam.map((f) => (
+              <button
+                key={f.id}
+                class="chip"
+                title="Tocar para voltar a contar como feriado"
+                onClick={async () => {
+                  const desfazer = await desmarcarNaoFolga(f.nome);
+                  avisar({ texto: `"${f.nome}" voltou a contar como feriado`, desfazer });
+                }}
+              >
+                {f.nome} ✕
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div class="linha" style={{ marginTop: 14 }}>
+        <button class="botao primario" onClick={() => abrirPainel({ tipo: 'feriado' })}>
+          Adicionar feriado
+        </button>
+      </div>
     </section>
   );
 }

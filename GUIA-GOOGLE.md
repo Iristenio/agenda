@@ -47,6 +47,17 @@ Eventos externos:
 - **contam no aviso de choque de horário** (exceto os marcados como "livre");
 - ficam guardados no tablet e aparecem mesmo sem internet (com a última versão baixada).
 
+## 3b. Feriados
+
+- Em **Ajustes → Agendas do Google no app → Escolher agendas**, o botão **🎉 Feriados** ao lado de uma agenda faz os
+  eventos de dia inteiro dela contarem como feriado (a agenda "Feriados no Brasil" já vem marcada).
+- Em **Ajustes → Feriados** você vê os próximos feriados, **cadastra os seus** (institucional, ponto facultativo,
+  recesso — um por dia, com opção "repete todo ano") e vê a lista dos que **não contam**.
+- Para tirar um feriado do Google que não é folga (Dia das Mães, Carnaval…): toque nele → **Não é folga**.
+  Vale para esse nome em todos os anos. Para desfazer: toque no nome em "Não contam como folga".
+- Efeitos: tarefas de "primeiro/último dia útil" pulam feriados; férias descontam feriados dos dias úteis; o calendário
+  destaca o dia; compromissos em feriado mostram um aviso (os recorrentes **não** se movem sozinhos).
+
 ## 4. Lembretes (notificações)
 
 - Os lembretes dos compromissos do app **tocam pelo app Google Agenda** de qualquer aparelho onde a conta **UNILAB**

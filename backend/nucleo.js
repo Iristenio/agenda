@@ -58,6 +58,13 @@ var ESQUEMA = {
       ['status', 's'], ['criado_em', 's'], ['atualizado_em', 's'],
     ],
   },
+  feriados: {
+    aba: 'FERIADOS',
+    campos: [
+      ['id', 's'], ['nome', 's'], ['data', 's?'], ['anual', 'b'], ['tipo', 's'], ['status', 's'],
+      ['criado_em', 's'], ['atualizado_em', 's'],
+    ],
+  },
 };
 
 var COLUNA_RECEBIDO = '_recebido_em';

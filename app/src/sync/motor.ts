@@ -5,6 +5,7 @@
 //   2) recebe tudo o que o servidor recebeu depois do último cursor (de qualquer aparelho).
 import type { AgendaGoogle, Entidade, Externo, ItemFila, Registro, Tarefa } from '../dominio/tipos';
 import { concluirTarefa } from '../dominio/tarefas';
+import { carregarFeriadosAFrente } from '../dados/feriados';
 import {
   aoGravarLocal,
   aplicarRemotos,
@@ -308,7 +309,8 @@ async function gerarProximasRecorrentes(recebidas: Tarefa[]): Promise<number> {
     if (r.status !== 'concluida' || !r.rrule || !r.prazo || r.proxima_gerada_id) continue;
     const local = await buscar('tarefas', r.id);
     if (!local || local.status !== 'concluida' || local.proxima_gerada_id) continue;
-    const { concluida, proxima } = concluirTarefa({ ...local, status: 'pendente' }, () => `${local.id}~prox`);
+    const feriados = await carregarFeriadosAFrente(local.prazo ?? r.prazo);
+    const { concluida, proxima } = concluirTarefa({ ...local, status: 'pendente' }, () => `${local.id}~prox`, new Date(), feriados);
     if (!proxima) continue;
     await gravar([
       { entidade: 'tarefas', registro: { ...concluida, concluida_em: local.concluida_em } },

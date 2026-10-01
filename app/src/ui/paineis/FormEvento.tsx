@@ -12,9 +12,12 @@ import {
   validarEvento,
 } from '../../dominio/ferias';
 import { nomeExibicao } from '../../dominio/pessoas';
-import { hojeISO, somarDias } from '../../dominio/datas';
+import { diaDaSemana, hojeISO, somarDias } from '../../dominio/datas';
+
+const ehDiaDeSemana = (d: string) => diaDaSemana(d) !== 0 && diaDaSemana(d) !== 6;
 import { buscar, novoId } from '../../dados/repositorio';
-import { useConfig, useEntidade } from '../../dados/ganchos';
+import { useConfig, useEntidade, useFeriados } from '../../dados/ganchos';
+import { feriadosNoPeriodo } from '../../dominio/feriados';
 import { excluirEvento, salvarEvento } from '../acoes/pessoas';
 import { useEstado } from '../estado';
 import { IconeAlerta } from '../icones';
@@ -43,6 +46,7 @@ export function FormEvento({ id, tipo_evento, pessoa_id, data }: Props) {
   const mapaPessoas = useMemo(() => new Map(pessoasTodas.map((p) => [p.id, p])), [pessoasTodas]);
   const [e, setE] = useState<Evento | null>(null);
   const [erros, setErros] = useState<string[]>([]);
+  const feriados = useFeriados(e?.data_inicio ?? hojeISO(), e?.data_fim ?? hojeISO());
   const novo = !id;
 
   useEffect(() => {
@@ -73,6 +77,7 @@ export function FormEvento({ id, tipo_evento, pessoa_id, data }: Props) {
   }, [e, eventos, config.limite_ausentes_equipe]);
 
   if (!e) return null;
+  const feriadosDoPeriodo = e.data_fim >= e.data_inicio ? feriadosNoPeriodo(feriados, e.data_inicio, e.data_fim).filter((f) => ehDiaDeSemana(f.data)) : [];
   const mudar = (parcial: Partial<Evento>) => setE({ ...e, ...parcial });
   const ehFerias = e.tipo !== 'outro';
   const opcoesPessoa = e.tipo === 'ferias_equipe' ? pessoas.filter((p) => p.da_equipe || p.id === e.pessoa_id) : pessoas;
@@ -160,8 +165,14 @@ export function FormEvento({ id, tipo_evento, pessoa_id, data }: Props) {
         {valido && (
           <div class="contagem-dias">
             <span><strong>{diasCorridos(e.data_inicio, e.data_fim)}</strong> dias corridos</span>
-            <span><strong>{diasUteis(e.data_inicio, e.data_fim)}</strong> dias úteis</span>
+            <span><strong>{diasUteis(e.data_inicio, e.data_fim, feriados)}</strong> dias úteis</span>
           </div>
+        )}
+        {valido && feriadosDoPeriodo.length > 0 && (
+          <p class="dica">
+            Feriados no período (não contam como dia útil):{' '}
+            {feriadosDoPeriodo.map((f) => `${fmt(f.data)} ${f.nome}`).join(' · ')}
+          </p>
         )}
         <div class="chips">
           {[10, 15, 20, 30].map((n) => (

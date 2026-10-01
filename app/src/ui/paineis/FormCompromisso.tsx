@@ -12,9 +12,10 @@ import {
   type Ocorrencia,
 } from '../../dominio/compromissos';
 import { deRRule, ehDiaUtilDoMes, primeiraOcorrencia, type Recorrencia } from '../../dominio/recorrencia';
-import { diferencaMinutos, somarMinutos } from '../../dominio/datas';
+import { diferencaMinutos, hojeISO, somarMinutos } from '../../dominio/datas';
 import { novoId } from '../../dados/repositorio';
-import { useAgendasExternas, useEntidade, useExternos } from '../../dados/ganchos';
+import { useAgendasExternas, useEntidade, useExternos, useFeriados } from '../../dados/ganchos';
+import { feriadosNoPeriodo } from '../../dominio/feriados';
 import { carregarOcorrencia, ehDeSerie, excluirCompromisso, novaCategoria, salvarCategoria, salvarCompromisso } from '../acoes/compromissos';
 import { useEstado, type OpcaoDialogo } from '../estado';
 import { SeletorRecorrencia } from '../componentes/SeletorRecorrencia';
@@ -53,6 +54,7 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
   const [erros, setErros] = useState<string[]>([]);
   const [novaCat, setNovaCat] = useState<string | null>(null);
   const [inicioAjustado, setInicioAjustado] = useState(false);
+  const feriados = useFeriados(c?.inicio.slice(0, 10) ?? hojeISO(), c?.fim.slice(0, 10) ?? hojeISO());
   const titulo = useRef<HTMLInputElement>(null);
   const novo = !id;
 
@@ -93,6 +95,8 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
 
   if (!c) return null;
   const mudar = (parcial: Partial<Compromisso>) => setC({ ...c, ...parcial });
+  // RN46 — compromisso em feriado (só avisa; não bloqueia nem move)
+  const feriadosDoCompromisso = c.fim >= c.inicio ? feriadosNoPeriodo(feriados, c.inicio.slice(0, 10), c.fim.slice(0, 10)) : [];
   // RN13 — compromisso durante minhas férias
   const feriasNoPeriodo = c.fim >= c.inicio ? minhasFeriasEm(eventos, c.inicio.slice(0, 10), c.fim.slice(0, 10)) : [];
 
@@ -225,6 +229,21 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
               </span>
             ))}
             {choques.length > 3 && <span>e mais {choques.length - 3}</span>}
+          </div>
+        </div>
+      )}
+
+      {feriadosDoCompromisso.length > 0 && (
+        <div class="alerta" role="status">
+          <IconeAlerta />
+          <div>
+            <strong>{feriadosDoCompromisso.length > 1 ? 'Há feriados neste período' : 'Cai num feriado'}</strong>
+            {feriadosDoCompromisso.map((f) => (
+              <span key={f.data}>
+                {f.data.slice(8)}/{f.data.slice(5, 7)} · {f.nome}
+              </span>
+            ))}
+            {rec && <span>As outras ocorrências não pulam feriados: mova só esta, se quiser.</span>}
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@
 import type { Lista, Tarefa } from '../../dominio/tipos';
 import { concluirTarefa, novaTarefa, reabrirTarefa } from '../../dominio/tarefas';
 import { gravar, LISTA_PADRAO_ID, listarTodos, novoId, salvar } from '../../dados/repositorio';
+import { carregarFeriadosAFrente } from '../../dados/feriados';
 
 type Desfazer = () => Promise<void>;
 
@@ -35,7 +36,8 @@ export async function alternarConclusao(t: Tarefa): Promise<{ texto: string; des
     return { texto: 'Tarefa reaberta', desfazer: criarDesfazer(anteriores, [reaberta]) };
   }
 
-  const { concluida, proxima } = concluirTarefa(t, novoId);
+  const feriados = t.rrule && t.prazo ? await carregarFeriadosAFrente(t.prazo) : new Map();
+  const { concluida, proxima } = concluirTarefa(t, novoId, new Date(), feriados);
   const atuais = proxima ? [concluida, proxima] : [concluida];
   const anteriores = (await gravar(atuais.map((registro) => ({ entidade: 'tarefas' as const, registro })))) as (
     | Tarefa

@@ -459,6 +459,7 @@ function processarPendentesGoogle() {
   if (!trava.tryLock(5000)) return;
   try {
     var planilha = abrirPlanilha();
+    garantirEstrutura(planilha); // cria abas novas antes de ler (ex.: FERIADOS)
     var tabelas = tabelasDaPlanilha(planilha);
     var controle = tabelaGoogle(planilha);
     processarGoogle(planilha, tabelas, 3 * 60 * 1000, controle);

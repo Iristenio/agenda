@@ -1,7 +1,8 @@
 // Férias e outros períodos (RN13, RN34–RN37).
 import type { Evento, Id, Pessoa, TipoEvento } from './tipos';
-import { diaDaSemana, diferencaDias, somarDias } from './datas';
+import { diferencaDias, somarDias } from './datas';
 import { nomeExibicao } from './pessoas';
+import { contarDiasUteis, type MapaFeriados } from './feriados';
 
 export const TITULO_TIPO: Record<TipoEvento, string> = {
   ferias_pessoais: 'Minhas férias',
@@ -47,14 +48,9 @@ export function validarEvento(e: Pick<Evento, 'tipo' | 'pessoa_id' | 'data_inici
 
 export const diasCorridos = (ini: string, fim: string) => diferencaDias(ini, fim) + 1;
 
-/** Dias úteis (segunda a sexta), inclusivo. Feriados entram numa versão futura. */
-export function diasUteis(ini: string, fim: string): number {
-  let total = 0;
-  for (let d = ini; d <= fim; d = somarDias(d, 1)) {
-    const s = diaDaSemana(d);
-    if (s !== 0 && s !== 6) total++;
-  }
-  return total;
+/** Dias úteis (segunda a sexta, descontando feriados — RN45), inclusivo. */
+export function diasUteis(ini: string, fim: string, feriados: MapaFeriados = new Map()): number {
+  return contarDiasUteis(ini, fim, feriados);
 }
 
 /* ---------------- Ausências ---------------- */

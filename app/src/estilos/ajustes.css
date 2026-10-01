@@ -65,3 +65,21 @@ button.status-sync:active { background: var(--superficie-2); }
 .agenda-opcao span { display: flex; flex-direction: column; min-width: 0; }
 .agenda-opcao strong { font-weight: 600; overflow-wrap: anywhere; }
 .agenda-opcao small { color: var(--texto-2); }
+
+/* ---- Feriados ---- */
+.feriados-lista { list-style: none; margin: 0 0 6px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.feriado-linha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 46px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--superficie-2);
+  text-align: left;
+}
+.feriado-data { width: 118px; flex: none; color: #c2410c; font-weight: 650; font-variant-numeric: tabular-nums; }
+.feriado-linha strong { font-weight: 550; overflow-wrap: anywhere; }
+.sub-titulo { margin: 16px 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--texto-2); }
+.agenda-opcao .chip { margin-left: auto; flex: none; min-height: 38px; padding: 0 12px; font-size: 14px; }

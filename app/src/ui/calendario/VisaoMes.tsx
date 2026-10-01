@@ -30,12 +30,12 @@ export function VisaoMes({ dataFoco, aoNavegar, aoAbrirDia }: Props) {
   const mes = dataFoco.slice(0, 7);
   const primeiro = inicioDaSemana(inicioDoMes(dataFoco), config.primeiro_dia_semana);
   const dias = Array.from({ length: 42 }, (_, i) => somarDias(primeiro, i));
-  const { ocorrencias, categorias, tarefasPorDia, aniversarios, eventos, pessoas } = useDadosPeriodo(dias[0], dias[41]);
+  const { ocorrencias, categorias, tarefasPorDia, aniversarios, eventos, pessoas, feriados } = useDadosPeriodo(dias[0], dias[41]);
   const toque = useRef<{ x: number; y: number } | null>(null);
   const deslizou = useRef(false); // evita que o deslize também "toque" no dia
 
   function itensDe(dia: string): ItemMes[] {
-    const itens: ItemMes[] = itensDoDia(dia, aniversarios, eventos, pessoas).map((i) => ({ ...i, classe: 'inteiro' }));
+    const itens: ItemMes[] = itensDoDia(dia, aniversarios, eventos, pessoas, feriados).map((i) => ({ ...i, classe: 'inteiro' }));
     const doDia = ocorrenciasDoDia(ocorrencias, dia).sort(
       (a, b) => Number(b.compromisso.dia_inteiro) - Number(a.compromisso.dia_inteiro) || a.inicio.localeCompare(b.inicio),
     );
@@ -82,7 +82,7 @@ export function VisaoMes({ dataFoco, aoNavegar, aoAbrirDia }: Props) {
           return (
             <div
               key={dia}
-              class={`mes-dia${dia.slice(0, 7) !== mes ? ' fora' : ''}${dia === hoje ? ' hoje' : ''}`}
+              class={`mes-dia${dia.slice(0, 7) !== mes ? ' fora' : ''}${dia === hoje ? ' hoje' : ''}${feriados.has(dia) ? ' feriado' : ''}`}
               onClick={() => !deslizou.current && aoAbrirDia(dia)}
               role="button"
               tabIndex={0}

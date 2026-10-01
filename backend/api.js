@@ -6,7 +6,7 @@ var PROP_TOKEN = 'TOKEN';
 var ABA_LOG = 'LOG_SYNC';
 var MAX_LINHAS_LOG = 3000;
 var PROP_ESTRUTURA = 'ESTRUTURA';
-var VERSAO_ESTRUTURA = '4';
+var VERSAO_ESTRUTURA = '5';
 var PROP_GOOGLE = 'GOOGLE_AGENDA_ATIVO';
 var PRAZO_GOOGLE_MS = 15000;
 
@@ -29,6 +29,8 @@ function garantirEstrutura(planilha) {
     if (posRecebido >= 0) abaCat.insertColumnBefore(posRecebido + 1);
     prepararAba(planilha, ESQUEMA.categorias.aba, cabecalho('categorias'));
   }
+  // v5: aba FERIADOS (feriados cadastrados no app e os "não é folga")
+  prepararAba(planilha, ESQUEMA.feriados.aba, cabecalho('feriados'));
   props.setProperty(PROP_ESTRUTURA, VERSAO_ESTRUTURA);
   // Primeira execução da versão com Google Tasks: envia todas as listas e tarefas
   if (tasksAtivo() && props.getProperty('TASKS_ENVIO_INICIAL') !== 'SIM') {

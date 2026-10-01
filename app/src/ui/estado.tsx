@@ -11,6 +11,7 @@ export type Painel =
   | { tipo: 'categoria'; id?: string }
   | { tipo: 'pessoa'; id?: string }
   | { tipo: 'externo'; id: string }
+  | { tipo: 'feriado'; id?: string; data?: string }
   | { tipo: 'evento'; id?: string; tipo_evento?: TipoEvento; pessoa_id?: string; data?: string };
 
 export interface Aviso {

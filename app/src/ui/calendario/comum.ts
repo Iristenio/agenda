@@ -4,7 +4,9 @@ import type { Categoria, Evento, Pessoa, Tarefa } from '../../dominio/tipos';
 import { expandirOcorrencias, externosComoOcorrencias, type Ocorrencia } from '../../dominio/compromissos';
 import { aniversariosEntre, nomeExibicao, type Aniversario } from '../../dominio/pessoas';
 import { eventosEntre, tituloEvento } from '../../dominio/ferias';
-import { useAgendasExternas, useEntidade, useExternos } from '../../dados/ganchos';
+import { useAgendasExternas, useEntidade, useExternos, useFeriados } from '../../dados/ganchos';
+import { idsAgendasFeriado } from '../../dados/feriados';
+import { externoEhFeriado, nomesIgnorados, type MapaFeriados } from '../../dominio/feriados';
 import type { Painel } from '../estado';
 
 /** Cor de compromissos sem categoria (fixa: contrasta com texto branco nos dois temas). */
@@ -12,6 +14,7 @@ export const COR_PADRAO = '#2f6fed';
 export const COR_EU = '#30a46c';
 export const COR_OUTRO = '#697386';
 export const COR_ANIVERSARIO = '#e54666';
+export const COR_FERIADO = '#c2410c';
 
 export const COR_EXTERNO = '#697386';
 
@@ -38,13 +41,22 @@ export function useOcorrencias(de: string, ate: string): Ocorrencia[] {
   const compromissos = useEntidade('compromissos');
   const externos = useExternos();
   const agendas = useAgendasExternas();
+  const feriados = useEntidade('feriados');
   return useMemo(() => {
     const cores = new Map(agendas.map((a) => [a.id, a.cor]));
     const visiveis = new Set(agendas.map((a) => a.id));
+    // Eventos do Google que contam como feriado aparecem como FERIADO (destaque do dia), não como evento
+    const agendasFeriado = idsAgendasFeriado(agendas);
+    const ignorados = nomesIgnorados(feriados);
     const doApp = expandirOcorrencias(compromissos, de, ate);
-    const deFora = externosComoOcorrencias(externos.filter((e) => visiveis.has(e.agenda_id)), de, ate, cores);
+    const deFora = externosComoOcorrencias(
+      externos.filter((e) => visiveis.has(e.agenda_id) && !externoEhFeriado(e, agendasFeriado, ignorados)),
+      de,
+      ate,
+      cores,
+    );
     return [...doApp, ...deFora].sort((a, b) => a.inicio.localeCompare(b.inicio) || b.fim.localeCompare(a.fim));
-  }, [compromissos, externos, agendas, de, ate]);
+  }, [compromissos, externos, agendas, feriados, de, ate]);
 }
 
 /** Item de dia inteiro exibido no calendário (aniversário, férias/período). */
@@ -55,8 +67,18 @@ export interface ItemDia {
   painel: Painel;
 }
 
-export function itensDoDia(dia: string, aniversarios: Aniversario[], eventos: Evento[], pessoas: Map<string, Pessoa>): ItemDia[] {
+export function itensDoDia(
+  dia: string,
+  aniversarios: Aniversario[],
+  eventos: Evento[],
+  pessoas: Map<string, Pessoa>,
+  feriados: MapaFeriados = new Map(),
+): ItemDia[] {
   const itens: ItemDia[] = [];
+  const feriado = feriados.get(dia);
+  if (feriado) {
+    itens.push({ chave: `fer-${dia}`, rotulo: `🎉 ${feriado}`, cor: COR_FERIADO, painel: { tipo: 'feriado', data: dia } });
+  }
   for (const a of aniversarios) {
     if (a.data !== dia) continue;
     itens.push({
@@ -90,6 +112,7 @@ export function useDadosPeriodo(de: string, ate: string) {
   const pessoas = useMemo(() => new Map(pessoasLista.map((p) => [p.id, p])), [pessoasLista]);
   const aniversarios = useMemo(() => aniversariosEntre(pessoasLista, de, ate), [pessoasLista, de, ate]);
   const eventos = useMemo(() => eventosEntre(eventosLista, de, ate), [eventosLista, de, ate]);
+  const feriados = useFeriados(de, ate);
   const tarefasPorDia = useMemo(() => {
     const mapa = new Map<string, Tarefa[]>();
     for (const t of tarefas) {
@@ -100,7 +123,7 @@ export function useDadosPeriodo(de: string, ate: string) {
     return mapa;
   }, [tarefas, de, ate]);
 
-  return { ocorrencias, categorias, pessoas, aniversarios, eventos, eventosTodos: eventosLista, tarefasPorDia };
+  return { ocorrencias, categorias, pessoas, aniversarios, eventos, eventosTodos: eventosLista, tarefasPorDia, feriados };
 }
 
 /** Detecta um deslize horizontal (para navegar entre períodos). */

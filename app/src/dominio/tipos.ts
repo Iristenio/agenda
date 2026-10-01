@@ -118,11 +118,29 @@ export interface AgendaGoogle {
   cor: string;
   principal: boolean;
   acesso: string;
+  /** Os eventos de dia inteiro desta agenda contam como feriado (RN42). */
+  feriados?: boolean;
+}
+
+/* ---------------- Feriados (RN42–RN46) ---------------- */
+
+export interface Feriado extends Registro {
+  nome: string;
+  /** AAAA-MM-DD (obrigatória para 'folga'; vazia para 'nao_folga'). */
+  data: string | null;
+  /** Repete todo ano no mesmo dia e mês. */
+  anual: boolean;
+  /**
+   * folga     = feriado cadastrado no app (institucional, ponto facultativo, recesso…)
+   * nao_folga = "este não conta": um feriado do Google com este NOME deixa de valer (ex.: Dia das Mães)
+   */
+  tipo: 'folga' | 'nao_folga';
+  status: 'ativo' | 'excluido';
 }
 
 /* ---------------- Infraestrutura ---------------- */
 
-export type Entidade = 'tarefas' | 'listas' | 'compromissos' | 'categorias' | 'pessoas' | 'eventos';
+export type Entidade = 'tarefas' | 'listas' | 'compromissos' | 'categorias' | 'pessoas' | 'eventos' | 'feriados';
 
 export interface ItemFila {
   id: Id;

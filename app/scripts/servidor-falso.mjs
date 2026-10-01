@@ -12,8 +12,18 @@ const tabelas = Object.fromEntries(Object.keys(nucleo.ESQUEMA).map((e) => [e, nu
 const AGENDAS = [
   { id: 'eu@unilab.edu.br', nome: 'Iristenio (UNILAB)', cor: '#039be5', principal: true, acesso: 'owner' },
   { id: 'pessoal@gmail.com', nome: 'Agenda pessoal (Gmail)', cor: '#8e24aa', principal: false, acesso: 'writer' },
-  { id: 'feriados', nome: 'Feriados no Brasil', cor: '#0b8043', principal: false, acesso: 'reader' },
+  { id: 'pt.brazilian#holiday@group.v.calendar.google.com', nome: 'Feriados no Brasil', cor: '#0b8043', principal: false, acesso: 'reader' },
 ];
+
+const FERIADOS = 'pt.brazilian#holiday@group.v.calendar.google.com';
+
+function primeiroUtilProximoMes() {
+  const x = new Date();
+  x.setDate(1);
+  x.setMonth(x.getMonth() + 1);
+  while (x.getDay() === 0 || x.getDay() === 6) x.setDate(x.getDate() + 1);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+}
 
 /** Eventos de exemplo: hoje e amanhã, em cada agenda pedida. */
 function externosDeExemplo(agendas) {
@@ -27,7 +37,10 @@ function externosDeExemplo(agendas) {
     { agenda_id: 'eu@unilab.edu.br', id: 'r1', titulo: 'Reunião do colegiado', local: 'Sala de reuniões', inicio: `${d(0)}T14:30`, fim: `${d(0)}T16:00`, dia_inteiro: false, livre: false },
     { agenda_id: 'eu@unilab.edu.br', id: 'r2', titulo: 'Banca de TCC', local: 'Auditório', inicio: `${d(1)}T09:00`, fim: `${d(1)}T11:00`, dia_inteiro: false, livre: false },
     { agenda_id: 'pessoal@gmail.com', id: 'p1', titulo: 'Academia', local: '', inicio: `${d(0)}T18:00`, fim: `${d(0)}T19:00`, dia_inteiro: false, livre: false },
-    { agenda_id: 'feriados', id: 'f1', titulo: 'Feriado de exemplo', local: '', inicio: `${d(2)}T00:00`, fim: `${d(2)}T23:59`, dia_inteiro: true, livre: true },
+    { agenda_id: FERIADOS, id: 'f1', titulo: 'Feriado de exemplo', local: '', inicio: `${d(2)}T00:00`, fim: `${d(2)}T23:59`, dia_inteiro: true, livre: true },
+    // No 1º dia útil (seg–sex) do mês que vem: para testar "primeiro dia útil pula feriado"
+    { agenda_id: FERIADOS, id: 'f2', titulo: 'Feriado no primeiro dia útil', local: '', inicio: `${primeiroUtilProximoMes()}T00:00`, fim: `${primeiroUtilProximoMes()}T23:59`, dia_inteiro: true, livre: true },
+    { agenda_id: FERIADOS, id: 'f3', titulo: 'Dia das Mães (exemplo)', local: '', inicio: `${d(5)}T00:00`, fim: `${d(5)}T23:59`, dia_inteiro: true, livre: true },
   ];
   return todos
     .filter((e) => agendas.includes(e.agenda_id))

@@ -360,3 +360,12 @@
 .externo-cabecalho { border-left: 5px solid var(--cor); padding: 4px 0 4px 14px; }
 .externo-cabecalho h3 { font-size: 21px; margin-bottom: 4px; }
 .externo-cabecalho span { display: flex; align-items: center; gap: 8px; color: var(--texto-2); }
+
+/* ---- Feriados: dia destacado ---- */
+.grade-dia-titulo.feriado .dia-semana,
+.grade-dia-titulo.feriado .dia-numero { color: #c2410c; }
+.grade-dia-titulo.feriado.hoje .dia-numero { color: var(--primaria-texto); }
+.grade-coluna.feriado { background-color: color-mix(in srgb, #c2410c 7%, transparent); }
+.mes-dia.feriado { background: color-mix(in srgb, #c2410c 8%, transparent); }
+.mes-dia.feriado .mes-numero { color: #c2410c; }
+.mes-dia.feriado.hoje .mes-numero { color: var(--primaria-texto); }

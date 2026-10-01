@@ -1,11 +1,12 @@
 // Formulário de tarefa (painel lateral): criar e editar.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Prioridade, Tarefa } from '../../dominio/tipos';
-import { novaTarefa, validarTarefa } from '../../dominio/tarefas';
+import { novaTarefa, proximoPrazo, validarTarefa } from '../../dominio/tarefas';
+import { diaUtilDoMes } from '../../dominio/feriados';
 import { deRRule, ehDiaUtilDoMes, paraRRule, primeiraOcorrencia, type Recorrencia } from '../../dominio/recorrencia';
 import { hojeISO, somarDias } from '../../dominio/datas';
 import { buscar, LISTA_PADRAO_ID, novoId } from '../../dados/repositorio';
-import { useEntidade } from '../../dados/ganchos';
+import { useEntidade, useFeriados } from '../../dados/ganchos';
 import { alternarConclusao, excluirTarefa, salvarTarefa } from '../acoes/tarefas';
 import { useEstado } from '../estado';
 import { SeletorRecorrencia } from '../componentes/SeletorRecorrencia';
@@ -24,6 +25,8 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
   const [rec, setRec] = useState<Recorrencia | null>(null);
   const [recAlterada, setRecAlterada] = useState(false);
   const [prazoAjustado, setPrazoAjustado] = useState(false);
+  const inicioFeriados = hojeISO();
+  const feriadosProximos = useFeriados(somarDias(inicioFeriados, -31), somarDias(inicioFeriados, 460));
   const [erros, setErros] = useState<string[]>([]);
   const titulo = useRef<HTMLInputElement>(null);
   const nova = !id;
@@ -43,6 +46,15 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
   if (!t) return null;
   const mudar = (parcial: Partial<Tarefa>) => setT({ ...t, ...parcial });
   const hoje = hojeISO();
+  const feriados = feriadosProximos;
+
+  /** Próximo "primeiro/último dia útil" a partir de `base`, pulando feriados (RN44). */
+  function alinharDiaUtil(r: Recorrencia, base: string): string {
+    const modo = r.mensal_modo as 'primeiro_util' | 'ultimo_util';
+    const ajustada = diaUtilDoMes(primeiraOcorrencia(r, base), modo, feriados);
+    if (ajustada >= base) return ajustada;
+    return proximoPrazo(paraRRule(r, base), base, feriados) ?? ajustada; // o dia útil deste mês já passou
+  }
 
   function mudarRecorrencia(r: Recorrencia | null) {
     setRec(r);
@@ -51,7 +63,7 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
     if (!r) return;
     const base = t!.prazo ?? hoje; // recorrente precisa de prazo
     // "Primeiro/último dia útil": o prazo passa a ser o próximo dia que a regra gera
-    const alinhado = ehDiaUtilDoMes(r) ? primeiraOcorrencia(r, base) : base;
+    const alinhado = ehDiaUtilDoMes(r) ? alinharDiaUtil(r, base) : base;
     if (alinhado !== t!.prazo) {
       mudar({ prazo: alinhado });
       setPrazoAjustado(ehDiaUtilDoMes(r) && alinhado !== base);

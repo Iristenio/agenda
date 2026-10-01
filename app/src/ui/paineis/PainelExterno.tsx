@@ -1,5 +1,9 @@
 // Detalhes de um evento do Google Agenda criado fora do app (somente leitura).
-import { useAgendasExternas, useExternos } from '../../dados/ganchos';
+import { useAgendasExternas, useEntidade, useExternos } from '../../dados/ganchos';
+import { idsAgendasFeriado } from '../../dados/feriados';
+import { nomesIgnorados, normalizarNome } from '../../dominio/feriados';
+import { desmarcarNaoFolga } from '../acoes/feriados';
+import { useEstado } from '../estado';
 import { deDataISO } from '../../dominio/datas';
 
 const fmtDia = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -17,11 +21,15 @@ function quando(inicio: string, fim: string, diaInteiro: boolean): string {
 }
 
 export function PainelExterno({ id }: { id: string }) {
+  const { fecharPainel, avisar } = useEstado();
   const externos = useExternos();
   const agendas = useAgendasExternas();
+  const feriados = useEntidade('feriados');
   const e = externos.find((x) => x.id === id);
   if (!e) return <p class="dica">Este evento não está mais disponível.</p>;
   const agenda = agendas.find((a) => a.id === e.agenda_id);
+  // Feriado do Google que o usuário marcou como "não é folga" (RN43)
+  const desmarcado = e.dia_inteiro && idsAgendasFeriado(agendas).has(e.agenda_id) && nomesIgnorados(feriados).has(normalizarNome(e.titulo));
 
   return (
     <div class="formulario">
@@ -53,11 +61,32 @@ export function PainelExterno({ id }: { id: string }) {
         Este evento foi criado fora do app (convite, reunião ou agenda compartilhada) e aparece aqui somente para
         consulta. Para alterar, use o Google Agenda.
       </p>
-      {e.link && (
+      {desmarcado && (
+        <p class="dica">
+          Este dia vem de uma agenda de feriados, mas está marcado como <strong>"não é folga"</strong> — continua sendo dia
+          útil para o app.
+        </p>
+      )}
+      {(e.link || desmarcado) && (
         <div class="acoes-form">
-          <a class="botao primario" href={e.link} target="_blank" rel="noopener noreferrer">
-            Abrir no Google Agenda
-          </a>
+          {e.link && (
+            <a class="botao primario" href={e.link} target="_blank" rel="noopener noreferrer">
+              Abrir no Google Agenda
+            </a>
+          )}
+          {desmarcado && (
+            <button
+              type="button"
+              class="botao"
+              onClick={async () => {
+                const desfazer = await desmarcarNaoFolga(e.titulo);
+                fecharPainel();
+                avisar({ texto: `"${e.titulo}" voltou a contar como feriado`, desfazer });
+              }}
+            >
+              Contar como feriado
+            </button>
+          )}
         </div>
       )}
     </div>

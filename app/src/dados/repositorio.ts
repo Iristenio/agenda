@@ -1,6 +1,6 @@
 // Leitura e gravação local + registro na fila de sincronização (RN01, RN02, RN04, RS02).
 import { abrirBanco } from './db';
-import type { Categoria, Compromisso, Config, Entidade, Evento, Externo, ItemFila, Lista, Pessoa, Registro, Tarefa } from '../dominio/tipos';
+import type { Categoria, Compromisso, Config, Entidade, Evento, Externo, Feriado, ItemFila, Lista, Pessoa, Registro, Tarefa } from '../dominio/tipos';
 import { CONFIG_PADRAO } from '../dominio/tipos';
 
 export type MapaEntidades = {
@@ -10,6 +10,7 @@ export type MapaEntidades = {
   categorias: Categoria;
   pessoas: Pessoa;
   eventos: Evento;
+  feriados: Feriado;
 };
 
 export const novoId = (): string => crypto.randomUUID();
@@ -193,7 +194,7 @@ export async function registrarFalhas(falhas: { item: ItemFila; erro: string }[]
  */
 export async function aplicarRemotos(dados: Partial<Record<Entidade, Registro[]>>): Promise<number> {
   const db = await abrirBanco();
-  const conhecidas: Entidade[] = ['tarefas', 'listas', 'compromissos', 'categorias', 'pessoas', 'eventos'];
+  const conhecidas: Entidade[] = ['tarefas', 'listas', 'compromissos', 'categorias', 'pessoas', 'eventos', 'feriados'];
   const entidades = conhecidas.filter((e) => (dados[e] ?? []).length);
   if (!entidades.length) return 0;
   const lojas: (Entidade | 'fila_sync')[] = [...entidades, 'fila_sync'];

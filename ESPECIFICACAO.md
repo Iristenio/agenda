@@ -263,6 +263,15 @@ ids dos calendários Google · id da lista padrão do Google Tasks · data da ú
 - **RN36** — Alerta se mais de `limite_ausentes_equipe` pessoas estiverem de férias no mesmo dia.
 - **RN37** — Férias pessoais → calendário "Férias – Pessoais"; férias da equipe → "Férias – Equipe". Ambas como eventos de dia inteiro.
 - **RN38** — Desativar uma pessoa oculta seus aniversários futuros (e os remove do Google), mas mantém o histórico de férias.
+- **RN42** — **Feriados unificados**: feriado = (eventos de dia inteiro das agendas do Google marcadas com 🎉 + feriados
+  cadastrados no app) − os marcados como "não é folga". Agendas de feriados do Google já vêm marcadas.
+- **RN43** — **"Não é folga"**: vale pelo *nome* do feriado do Google, em todos os anos (ex.: Dia das Mães, Carnaval).
+  Pode ser desfeito em Ajustes ou tocando no evento.
+- **RN44** — Tarefas com repetição "primeiro/último dia útil" **pulam feriados** ao gerar a próxima (e ao alinhar o prazo).
+  O app conhece os feriados do Google até ~13 meses à frente.
+- **RN45** — A contagem de **dias úteis das férias** desconta os feriados.
+- **RN46** — **Compromissos** em feriado: só aviso. Compromissos recorrentes **não** pulam feriados automaticamente (a regra
+  enviada ao Google não conhece feriados); move-se a ocorrência, se necessário.
 - **RN39** — Na contagem de ausentes (RN36), suas férias contam como uma pessoa ("Você"). Períodos do tipo "outro" não contam.
 - **RN40** — Data de nascimento sem ano é gravada como "--MM-DD"; nesse caso não se mostra idade.
 - **RN41** — Período do tipo "outro" (ex.: congresso, licença) exige um nome; a pessoa é opcional.
