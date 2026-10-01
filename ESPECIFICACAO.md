@@ -227,6 +227,9 @@ ids dos calendários Google · id da lista padrão do Google Tasks · data da ú
 - **RN12** — Choque de horário com outro compromisso gera **alerta**, sem bloquear.
 - **RN13** — Compromisso durante suas férias (ferias_pessoais) gera **alerta**.
 - **RN14** — Recorrência: diária · semanal (escolha dos dias) · mensal (dia N, ou "2ª terça") · anual · a cada N dias/semanas/meses. Término: nunca · em uma data · após N ocorrências.
+- **RN14a** — Mensal também aceita **"primeiro dia útil"** e **"último dia útil"** do mês (útil = segunda a sexta;
+  feriados não são descontados). No padrão do Google: `BYDAY=MO,TU,WE,TH,FR;BYSETPOS=1` (ou `-1`). Ao escolher uma
+  dessas opções, o prazo/início é ajustado para o próximo dia que a regra gera, e o formulário avisa.
 - **RN15** — Editar ou excluir uma ocorrência de série pergunta o alcance:
   - **Só esta:** cria exceção (`serie_id` + `ocorrencia_original`), ou adiciona a data em `excecoes` se for exclusão.
   - **Esta e as seguintes:** encerra a série original na véspera (`UNTIL`) e cria uma série nova a partir desta ocorrência.

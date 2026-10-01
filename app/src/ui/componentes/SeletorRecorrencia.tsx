@@ -1,5 +1,5 @@
 // Seletor de recorrência (RN14) — reutilizado por tarefas e, na etapa 2, por compromissos.
-import { descrever, flutuante, posicaoNoMes, recorrenciaPadrao, type Frequencia, type Recorrencia } from '../../dominio/recorrencia';
+import { descrever, ehDiaUtilDoMes, flutuante, posicaoNoMes, recorrenciaPadrao, type Frequencia, type Recorrencia } from '../../dominio/recorrencia';
 
 interface Props {
   valor: Recorrencia | null;
@@ -85,14 +85,23 @@ export function SeletorRecorrencia({ valor, inicio, aoMudar }: Props) {
           )}
 
           {valor.freq === 'mensal' && (
-            <div class="segmentado pequeno">
-              <button type="button" aria-checked={valor.mensal_modo === 'dia'} role="radio" onClick={() => mudar({ mensal_modo: 'dia' })}>
+            <div class="chips" role="radiogroup" aria-label="Dia do mês">
+              <button type="button" class="chip" role="radio" aria-checked={valor.mensal_modo === 'dia'} aria-pressed={valor.mensal_modo === 'dia'} onClick={() => mudar({ mensal_modo: 'dia' })}>
                 No dia {d.getUTCDate()}
               </button>
-              <button type="button" aria-checked={valor.mensal_modo === 'posicao'} role="radio" onClick={() => mudar({ mensal_modo: 'posicao' })}>
+              <button type="button" class="chip" role="radio" aria-checked={valor.mensal_modo === 'posicao'} aria-pressed={valor.mensal_modo === 'posicao'} onClick={() => mudar({ mensal_modo: 'posicao' })}>
                 No {posTexto} {DIAS_NOMES[d.getUTCDay()]}
               </button>
+              <button type="button" class="chip" role="radio" aria-checked={valor.mensal_modo === 'primeiro_util'} aria-pressed={valor.mensal_modo === 'primeiro_util'} onClick={() => mudar({ mensal_modo: 'primeiro_util' })}>
+                No primeiro dia útil
+              </button>
+              <button type="button" class="chip" role="radio" aria-checked={valor.mensal_modo === 'ultimo_util'} aria-pressed={valor.mensal_modo === 'ultimo_util'} onClick={() => mudar({ mensal_modo: 'ultimo_util' })}>
+                No último dia útil
+              </button>
             </div>
+          )}
+          {ehDiaUtilDoMes(valor) && (
+            <p class="dica">Dia útil = segunda a sexta (feriados não são descontados).</p>
           )}
 
           <div class="linha">

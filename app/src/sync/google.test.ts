@@ -44,6 +44,12 @@ describe('compromissos → Google', () => {
     expect(r.evento.recurrence).toEqual(['RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;UNTIL=20261006T025959Z']);
   });
 
+  it('série mensal no último dia útil vai ao Google com BYSETPOS', () => {
+    const rec = { ...recorrenciaPadrao('mensal', '2026-10-30T09:00'), mensal_modo: 'ultimo_util' as const };
+    const r = g.montarEventoGoogle('compromissos', comp({ inicio: '2026-10-30T09:00', fim: '2026-10-30T10:00', rrule: paraRRule(rec, '2026-10-30T09:00') }), semExcecoes);
+    expect(r.evento.recurrence[0]).toBe('RRULE:FREQ=MONTHLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1');
+  });
+
   it('série de dia inteiro: UNTIL só com a data', () => {
     const rec = { ...recorrenciaPadrao('diaria', '2026-09-21'), fim: 'data' as const, ate: '2026-09-30' };
     expect(g.regraParaGoogle(paraRRule(rec, '2026-09-21'), true)).toBe('RRULE:FREQ=DAILY;INTERVAL=1;UNTIL=20260930');

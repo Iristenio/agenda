@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Prioridade, Tarefa } from '../../dominio/tipos';
 import { novaTarefa, validarTarefa } from '../../dominio/tarefas';
-import { deRRule, paraRRule, type Recorrencia } from '../../dominio/recorrencia';
+import { deRRule, ehDiaUtilDoMes, paraRRule, primeiraOcorrencia, type Recorrencia } from '../../dominio/recorrencia';
 import { hojeISO, somarDias } from '../../dominio/datas';
 import { buscar, LISTA_PADRAO_ID, novoId } from '../../dados/repositorio';
 import { useEntidade } from '../../dados/ganchos';
@@ -23,6 +23,7 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
   const [t, setT] = useState<Tarefa | null>(null);
   const [rec, setRec] = useState<Recorrencia | null>(null);
   const [recAlterada, setRecAlterada] = useState(false);
+  const [prazoAjustado, setPrazoAjustado] = useState(false);
   const [erros, setErros] = useState<string[]>([]);
   const titulo = useRef<HTMLInputElement>(null);
   const nova = !id;
@@ -46,7 +47,15 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
   function mudarRecorrencia(r: Recorrencia | null) {
     setRec(r);
     setRecAlterada(true);
-    if (r && !t!.prazo) mudar({ prazo: hoje }); // recorrente precisa de prazo
+    setPrazoAjustado(false);
+    if (!r) return;
+    const base = t!.prazo ?? hoje; // recorrente precisa de prazo
+    // "Primeiro/último dia útil": o prazo passa a ser o próximo dia que a regra gera
+    const alinhado = ehDiaUtilDoMes(r) ? primeiraOcorrencia(r, base) : base;
+    if (alinhado !== t!.prazo) {
+      mudar({ prazo: alinhado });
+      setPrazoAjustado(ehDiaUtilDoMes(r) && alinhado !== base);
+    }
   }
 
   async function salvar(e?: Event) {
@@ -132,6 +141,9 @@ export function FormTarefa({ id, lista_id }: { id?: string; lista_id?: string })
       <fieldset>
         <legend>Repetir</legend>
         <SeletorRecorrencia valor={rec} inicio={t.prazo ?? hoje} aoMudar={mudarRecorrencia} />
+        {prazoAjustado && t.prazo && (
+          <p class="dica">📅 Prazo ajustado para {t.prazo.split('-').reverse().join('/')}, o próximo dia que segue essa regra.</p>
+        )}
       </fieldset>
 
       <fieldset>

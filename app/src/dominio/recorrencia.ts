@@ -10,7 +10,8 @@ export interface Recorrencia {
   freq: Frequencia;
   intervalo: number;           // a cada N (dias/semanas/meses/anos)
   dias_semana: number[];       // 0 = domingo … 6 = sábado (só semanal)
-  mensal_modo: 'dia' | 'posicao'; // dia 15 · ou "2ª terça"
+  /** dia 15 · "2ª terça" · primeiro dia útil · último dia útil (útil = segunda a sexta) */
+  mensal_modo: 'dia' | 'posicao' | 'primeiro_util' | 'ultimo_util';
   fim: 'nunca' | 'data' | 'contagem';
   ate: string | null;          // AAAA-MM-DD (inclusivo)
   contagem: number | null;
@@ -24,6 +25,7 @@ const FREQ: Record<Frequencia, number> = {
 };
 
 const DIAS_RRULE: Weekday[] = [RRule.SU, RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA];
+const DIAS_UTEIS: Weekday[] = [RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR];
 
 /** "AAAA-MM-DD" ou "AAAA-MM-DDTHH:mm" → Date flutuante (UTC com os números locais). */
 export function flutuante(texto: string): Date {
@@ -76,6 +78,11 @@ export function paraRRule(rec: Recorrencia, inicio: string): string {
   if (rec.freq === 'mensal' && rec.mensal_modo === 'posicao') {
     opcoes.byweekday = [DIAS_RRULE[dtstart.getUTCDay()].nth(posicaoNoMes(dtstart.getUTCDate()))];
   }
+  if (rec.freq === 'mensal' && (rec.mensal_modo === 'primeiro_util' || rec.mensal_modo === 'ultimo_util')) {
+    // Entre os dias de segunda a sexta do mês, o primeiro (1) ou o último (-1)
+    opcoes.byweekday = DIAS_UTEIS;
+    opcoes.bysetpos = rec.mensal_modo === 'primeiro_util' ? 1 : -1;
+  }
   if (rec.fim === 'data' && rec.ate) {
     opcoes.until = new Date(flutuante(rec.ate).getTime() + 86_399_000); // até 23:59:59
   }
@@ -91,6 +98,9 @@ export function deRRule(texto: string): Recorrencia {
   const freq = (Object.keys(FREQ) as Frequencia[]).find((f) => FREQ[f] === o.freq) ?? 'diaria';
   const dias = ([] as (Weekday | number | string)[]).concat(o.byweekday ?? []);
   const temPosicao = dias.some((d) => typeof d === 'object' && d.n);
+  const setpos = ([] as number[]).concat(o.bysetpos ?? [])[0];
+  const modoMensal: Recorrencia['mensal_modo'] =
+    freq !== 'mensal' ? 'dia' : setpos === 1 ? 'primeiro_util' : setpos === -1 ? 'ultimo_util' : temPosicao ? 'posicao' : 'dia';
   return {
     freq,
     intervalo: o.interval ?? 1,
@@ -98,11 +108,26 @@ export function deRRule(texto: string): Recorrencia {
       freq === 'semanal'
         ? dias.map((d) => ((typeof d === 'object' ? d.weekday : Number(d)) + 1) % 7)
         : [],
-    mensal_modo: freq === 'mensal' && temPosicao ? 'posicao' : 'dia',
+    mensal_modo: modoMensal,
     fim: o.until ? 'data' : o.count ? 'contagem' : 'nunca',
     ate: o.until ? dataDeFlutuante(o.until) : null,
     contagem: o.count ?? null,
   };
+}
+
+/** A regra é mensal por "primeiro/último dia útil"? */
+export const ehDiaUtilDoMes = (rec: Recorrencia) =>
+  rec.freq === 'mensal' && (rec.mensal_modo === 'primeiro_util' || rec.mensal_modo === 'ultimo_util');
+
+/**
+ * Primeira data-hora que a regra realmente gera, a partir de `inicio` (inclusive).
+ * Serve para alinhar o início quando ele não cai na regra — ex.: "primeiro dia útil" escolhido
+ * no dia 15 → o início vai para o primeiro dia útil do mês seguinte.
+ */
+export function primeiraOcorrencia(rec: Recorrencia, inicio: string): string {
+  const prox = rrulestr(paraRRule({ ...rec, fim: 'nunca', ate: null, contagem: null }, inicio)).after(flutuante(inicio), true);
+  const texto = prox ? dataHoraDeFlutuante(prox) : inicio;
+  return inicio.includes('T') ? texto : texto.slice(0, 10);
 }
 
 /** Data de início (DTSTART) gravada na regra. */
@@ -152,7 +177,11 @@ export function descrever(rec: Recorrencia, inicio: string): string {
     }
     case 'mensal': {
       const base = n === 1 ? 'Todo mês' : `A cada ${n} meses`;
-      if (rec.mensal_modo === 'posicao') {
+      if (rec.mensal_modo === 'primeiro_util') {
+        texto = `${base}, no primeiro dia útil`;
+      } else if (rec.mensal_modo === 'ultimo_util') {
+        texto = `${base}, no último dia útil`;
+      } else if (rec.mensal_modo === 'posicao') {
         const pos = posicaoNoMes(d.getUTCDate());
         const dia = d.getUTCDay();
         const ord = dia === 0 || dia === 6 ? ORDINAIS[pos] : ORDINAIS_F[pos];

@@ -11,7 +11,7 @@ import {
   type Escopo,
   type Ocorrencia,
 } from '../../dominio/compromissos';
-import { deRRule, type Recorrencia } from '../../dominio/recorrencia';
+import { deRRule, ehDiaUtilDoMes, primeiraOcorrencia, type Recorrencia } from '../../dominio/recorrencia';
 import { diferencaMinutos, somarMinutos } from '../../dominio/datas';
 import { novoId } from '../../dados/repositorio';
 import { useAgendasExternas, useEntidade, useExternos } from '../../dados/ganchos';
@@ -52,6 +52,7 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
   const [rec, setRec] = useState<Recorrencia | null>(null);
   const [erros, setErros] = useState<string[]>([]);
   const [novaCat, setNovaCat] = useState<string | null>(null);
+  const [inicioAjustado, setInicioAjustado] = useState(false);
   const titulo = useRef<HTMLInputElement>(null);
   const novo = !id;
 
@@ -113,6 +114,18 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
     const novoInicio = `${novaData}T${novaHora || '00:00'}`;
     const duracao = Math.max(c!.dia_inteiro ? 0 : 15, diferencaMinutos(c!.inicio, c!.fim));
     mudar({ inicio: novoInicio, fim: somarMinutos(novoInicio, duracao) });
+  }
+
+  /** "Primeiro/último dia útil": o início passa a ser o próximo dia que a regra gera. */
+  function mudarRecorrencia(r: Recorrencia | null) {
+    setRec(r);
+    setInicioAjustado(false);
+    if (!r || !ehDiaUtilDoMes(r)) return;
+    const alinhado = primeiraOcorrencia(r, c!.inicio);
+    if (alinhado !== c!.inicio) {
+      mudarInicio(alinhado.slice(0, 10), alinhado.slice(11, 16));
+      setInicioAjustado(true);
+    }
   }
 
   async function escolherEscopo(acao: 'salvar' | 'excluir'): Promise<Escopo | null | undefined> {
@@ -233,7 +246,10 @@ export function FormCompromisso({ id, data, inicio, fim, dia_inteiro }: Props) {
       {!ehExcecao && (
         <fieldset>
           <legend>Repetir</legend>
-          <SeletorRecorrencia valor={rec} inicio={c.inicio} aoMudar={setRec} />
+          <SeletorRecorrencia valor={rec} inicio={c.inicio} aoMudar={mudarRecorrencia} />
+          {inicioAjustado && (
+            <p class="dica">📅 Início ajustado para {dataIni.split('-').reverse().join('/')}, o próximo dia que segue essa regra.</p>
+          )}
         </fieldset>
       )}
 
